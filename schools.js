@@ -125,7 +125,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
     const calculate = (schoolName, start, end) => {
-        const pay = 293.54
+        const pay = 286.38
         const school = schoolDict[schoolName];
         
         console.log(school);
