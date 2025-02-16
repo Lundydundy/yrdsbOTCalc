@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YRDSB OT Daily Rate Calculator</title>
+    <script src="schools.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+        <div class="autocomplete-container">
+            <h2>YRDSB OT Daily Rate Calculator</h2>
+            <input autocomplete="off" type="text" id="searchBox" placeholder="Type a school name...">
+            <div id="dropdown" class="dropdown"></div>
+            <div> Start Time <input class="time" type="time" id="startTime" placeholder="Start Time"></div>
+            <div> End Time <input class="time" type="time" id="endTime" placeholder="End Time"></div>
+            <button id="searchButton">Search</button>
+        </div>
+    
+        <div id="results" class="resultsDiv">
+            <h2>Results</h2>
+            <div id="results" class="results">
+                Point: <span id="point"></span><br>
+                Rate: $<span id="rate"></span><br>
+            </div>
+        </div>
+
+
+</body>
+</html>
