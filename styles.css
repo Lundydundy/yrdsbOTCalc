@@ -16,6 +16,7 @@ body {
     gap: 10px;
     border: solid 1px #ccc;
     padding: 10px;
+    border-radius: 10px;
 }
 
 .resultsDiv{
@@ -41,7 +42,7 @@ input {
 
 .dropdown {
     position: absolute;
-    top: 45%;
+    top: 38%;
     width: 100%;
     border: 1px solid #ccc;
     border-top: none;
@@ -72,6 +73,14 @@ button{
     transition: all 0.3s;
 }
 
+.reset{
+    background-color: #f44336;
+}
+
+.reset:hover{
+    background-color: #f2857d;
+}
+
 button:hover {
-    background-color: #45a049;
+    background-color: #9bdb9f;
 }

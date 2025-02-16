@@ -158,6 +158,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         console.log(parseFloat(pay * payPoint).toFixed(2));
 
         document.getElementById("point").textContent = payPoint.toFixed(1);
+        document.getElementById("instructional").textContent = `${instructionalTime} mins`;
         document.getElementById("rate").textContent = parseFloat(pay * payPoint.toFixed(1)).toFixed(2);
         
     }
@@ -172,7 +173,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         calculate(schoolName, start, end);
     })
 
+    document.getElementById("resetButton").addEventListener("click", () => {
+        document.getElementById("searchBox").value = "";
+        document.getElementById("startTime").value = "";
+        document.getElementById("endTime").value = "";
+        document.getElementById("point").textContent = "";
+        document.getElementById("instructional").textContent = "";
+        document.getElementById("rate").textContent = "";
     })
+
+});
 
 
 
