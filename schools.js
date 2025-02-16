@@ -16,8 +16,73 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
     
-    const schoolDict = await loadSchools();
+    function timeStringToDate(timeString) {
+        const [hours, minutes] = timeString.split(":").map(Number);
+        const date = new Date(); // Current date
+        date.setHours(hours, minutes, 0, 0); // Set hours and minutes
+        return date;
+    }
 
+    function subtractTimesInMinutes(startTime, endTime) {
+        // Convert time strings to Date objects
+        const startDate = timeStringToDate(startTime);
+        const endDate = timeStringToDate(endTime);
+
+        // Calculate the difference in milliseconds
+        let diffMs = endDate - startDate;
+
+        // Handle case where endTime is on the next day
+        if (diffMs < 0) {
+            diffMs += 24 * 60 * 60 * 1000; // Add 24 hours in milliseconds
+        }
+
+        // Convert milliseconds to minutes
+        const diffMinutes = Math.floor(diffMs / (1000 * 60));
+
+        return diffMinutes;
+    }
+    
+    const calculate = (schoolName, start, end) => {
+        const pay = 286.38
+        const school = schoolDict[schoolName];
+        
+        console.log(school);
+        
+        const startTime = timeStringToDate(school.begin) > timeStringToDate(start) ? school.begin : start;
+        const endTime = timeStringToDate(school.dismiss) < timeStringToDate(end) ? school.dismiss : end; 
+        
+        const recessTime = subtractTimesInMinutes(school.recStart, school.recEnd);
+        const lunchTime = subtractTimesInMinutes(school.lunchStart, school.lunchEnd);
+        
+        console.log("startTime:", startTime, "\nendTime:", endTime, "\nrecessTime:", recessTime, "\nlunchTime:", lunchTime);
+        
+        const instructionalTime = subtractTimesInMinutes(startTime, endTime) - recessTime - lunchTime;
+
+        console.log("instructionalTime:", instructionalTime);
+        
+        let payPoint = instructionalTime / 300;
+
+        console.log(payPoint);
+        
+        // if the user starts before lunch and finishes after lunch or works less than 0.5
+        if(timeStringToDate(start) < timeStringToDate(school.lunchStart) && timeStringToDate(end) > timeStringToDate(school.lunchEnd) && payPoint < 0.7) {
+            payPoint = 0.7;
+        } else if (payPoint < 0.5) {
+            payPoint = 0.5;
+        }
+        
+        console.log(payPoint.toFixed(1));
+        
+        console.log(parseFloat(pay * payPoint).toFixed(2));
+
+        document.getElementById("point").textContent = payPoint.toFixed(1);
+        document.getElementById("instructional").textContent = `${instructionalTime} mins`;
+        document.getElementById("rate").textContent = parseFloat(pay * payPoint.toFixed(1)).toFixed(2);
+        
+    }
+
+    const schoolDict = await loadSchools();
+    
     const schoolNames = [
         "Adrienne Clarkson", "Aldergrove", "Alexander Muir", "Anne Frank", "Armadale",
         "Armitage Village", "Ashton Meadows", "Aurora Grove", "Aurora Heights", "Bakersfield",
@@ -62,32 +127,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     // Look up the bell times and add up the instructional minutes (no before/after school or recess/lunch) and divide by 300. The minimum for that would be 0.7 but it is probably more.
 
-    function timeStringToDate(timeString) {
-        const [hours, minutes] = timeString.split(":").map(Number);
-        const date = new Date(); // Current date
-        date.setHours(hours, minutes, 0, 0); // Set hours and minutes
-        return date;
-    }
-
-    function subtractTimesInMinutes(startTime, endTime) {
-        // Convert time strings to Date objects
-        const startDate = timeStringToDate(startTime);
-        const endDate = timeStringToDate(endTime);
-
-        // Calculate the difference in milliseconds
-        let diffMs = endDate - startDate;
-
-        // Handle case where endTime is on the next day
-        if (diffMs < 0) {
-            diffMs += 24 * 60 * 60 * 1000; // Add 24 hours in milliseconds
-        }
-
-        // Convert milliseconds to minutes
-        const diffMinutes = Math.floor(diffMs / (1000 * 60));
-
-        return diffMinutes;
-    }
-
     const searchBox = document.getElementById("searchBox");
     const dropdown = document.getElementById("dropdown");
 
@@ -124,44 +163,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
 
-    const calculate = (schoolName, start, end) => {
-        const pay = 286.38
-        const school = schoolDict[schoolName];
-        
-        console.log(school);
-        
-        const startTime = timeStringToDate(school.begin) > timeStringToDate(start) ? school.begin : start;
-        const endTime = timeStringToDate(school.dismiss) < timeStringToDate(end) ? school.dismiss : end; 
-        
-        const recessTime = subtractTimesInMinutes(school.recStart, school.recEnd);
-        const lunchTime = subtractTimesInMinutes(school.lunchStart, school.lunchEnd);
-        
-        console.log("startTime:", startTime, "\nendTime:", endTime, "\nrecessTime:", recessTime, "\nlunchTime:", lunchTime);
-        
-        const instructionalTime = subtractTimesInMinutes(startTime, endTime) - recessTime - lunchTime;
-
-        console.log("instructionalTime:", instructionalTime);
-        
-        let payPoint = instructionalTime / 300;
-
-        console.log(payPoint);
-        
-        // if the user starts before lunch and finishes after lunch or works less than 0.5
-        if(timeStringToDate(start) < timeStringToDate(school.lunchStart) && timeStringToDate(end) > timeStringToDate(school.lunchEnd) && payPoint < 0.7) {
-            payPoint = 0.7;
-        } else if (payPoint < 0.5) {
-            payPoint = 0.5;
-        }
-        
-        console.log(payPoint.toFixed(1));
-        
-        console.log(parseFloat(pay * payPoint).toFixed(2));
-
-        document.getElementById("point").textContent = payPoint.toFixed(1);
-        document.getElementById("instructional").textContent = `${instructionalTime} mins`;
-        document.getElementById("rate").textContent = parseFloat(pay * payPoint.toFixed(1)).toFixed(2);
-        
-    }
 
     document.getElementById("searchButton").addEventListener("click", () => {
         
@@ -187,8 +188,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
     // console.log(schoolDict);
-
-
 
 
     // fs.readFile("./schoolTimes.csv", (err, data) => {
