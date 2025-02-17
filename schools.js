@@ -185,6 +185,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("switch").addEventListener("change", () => {
         document.querySelector("body").style.backgroundColor = document.querySelector("body").style.backgroundColor === "black" ? "white" : "black";
         document.querySelector("body").style.color = document.querySelector("body").style.color === "white" ? "black" : "white";
+        document.querySelector("#dropdown").style.backgroundColor = document.querySelector("#dropdown").style.backgroundColor === "black" ? "white" : "black";
 
     })
 
