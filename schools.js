@@ -170,7 +170,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         const start = document.getElementById("startTime").value;
         const end = document.getElementById("endTime").value;
 
-
         calculate(schoolName, start, end);
     })
 
@@ -178,12 +177,21 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.getElementById("searchBox").value = "";
         document.getElementById("startTime").value = "";
         document.getElementById("endTime").value = "";
-        document.getElementById("point").textContent = "";
-        document.getElementById("instructional").textContent = "";
-        document.getElementById("rate").textContent = "";
+        document.getElementById("point").textContent = "0";
+        document.getElementById("instructional").textContent = "0";
+        document.getElementById("rate").textContent = "0";
+    })
+        
+    document.getElementById("switch").addEventListener("change", () => {
+        document.querySelector("body").style.backgroundColor = document.querySelector("body").style.backgroundColor === "black" ? "white" : "black";
+        document.querySelector("body").style.color = document.querySelector("body").style.color === "white" ? "black" : "white";
+
     })
 
+
 });
+
+
 
 
 
