@@ -91,6 +91,11 @@ button:hover {
     background-color: #9bdb9f;
 }
 
+#error{
+    color: red;
+    font-size: 16px;
+}
+
 .switch {
     position: relative;
     display: inline-block;

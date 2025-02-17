@@ -170,6 +170,24 @@ document.addEventListener("DOMContentLoaded", async () => {
         const start = document.getElementById("startTime").value;
         const end = document.getElementById("endTime").value;
 
+        if(!schoolName || !start || !end) {
+            document.getElementById("error").textContent = "Please fill out all fields";
+            return;
+        }
+
+        if(!schoolNames.includes(schoolName)) {
+            document.getElementById("error").textContent = "Please enter a valid school name";
+            return;
+        }
+
+        if(timeStringToDate(start) > timeStringToDate(end)) {
+            document.getElementById("error").textContent = "Start time cannot be later than end time. Make sure to use 24 hour time.";
+            return;
+        }
+
+        document.getElementById("error").textContent = "";
+
+
         calculate(schoolName, start, end);
     })
 
@@ -180,6 +198,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.getElementById("point").textContent = "0";
         document.getElementById("instructional").textContent = "0";
         document.getElementById("rate").textContent = "0";
+        document.getElementById("error").textContent = "";
+
     })
         
     document.getElementById("switch").addEventListener("change", () => {
