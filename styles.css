@@ -65,6 +65,7 @@ input {
 }
 .dropdown div:hover {
     background: #f0f0f0;
+    color: black;
 }
 button{
     padding: 10px;
