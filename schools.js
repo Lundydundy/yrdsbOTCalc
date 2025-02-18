@@ -204,8 +204,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         
     document.getElementById("switch").addEventListener("change", () => {
         document.querySelector("body").style.backgroundColor = document.querySelector("body").style.backgroundColor === "black" ? "white" : "black";
-        document.querySelector("body").style.color = document.querySelector("body").style.color === "white" ? "black" : "white";
+        document.querySelector("body").style.color = document.querySelector("body").style.color === "rgb(176, 179, 184)" ? "black" : "rgb(176, 179, 184)";
         document.querySelector("#dropdown").style.backgroundColor = document.querySelector("#dropdown").style.backgroundColor === "black" ? "white" : "black";
+        document.querySelectorAll("input").forEach((input) => {
+            input.style.backgroundColor = input.style.backgroundColor === "rgb(239, 240, 242)" ? "white" : "rgb(239, 240, 242)";
+        }) 
+
 
     })
 
