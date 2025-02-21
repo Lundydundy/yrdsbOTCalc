@@ -47,8 +47,8 @@ input::placeholder {
 }
 
 .time{
-    max-width: fit-content;
     min-width: 50px;
+    width: 140px;
 }
 
 .set-time-div{
