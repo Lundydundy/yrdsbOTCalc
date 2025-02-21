@@ -8,6 +8,7 @@ body {
     transition: all 0.3s;
     width: 100%;
     padding-top: 20px;
+    padding-bottom: 20px;
 }
 
 .autocomplete-container {
