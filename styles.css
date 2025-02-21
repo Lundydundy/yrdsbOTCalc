@@ -1,11 +1,13 @@
 body {
     font-family: Arial, sans-serif;
-    margin: 50px;
+    margin: auto;
     text-align: center;
     display: flex;
     flex-direction: column;
     gap: 20px;
     transition: all 0.3s;
+    width: 100%;
+    padding: 20px;
 }
 
 .autocomplete-container {
