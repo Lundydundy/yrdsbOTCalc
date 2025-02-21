@@ -56,7 +56,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         
         console.log("startTime:", startTime, "\nendTime:", endTime, "\nrecessTime:", recessTime, "\nlunchTime:", lunchTime);
         
-        const instructionalTime = subtractTimesInMinutes(startTime, endTime) - recessTime - lunchTime;
+        let instructionalTime = subtractTimesInMinutes(startTime, endTime);
+        if(startTime < school.recStart) instructionalTime -= recessTime;
+        if(startTime < school.lunchStart) instructionalTime -= lunchTime;
 
         console.log("instructionalTime:", instructionalTime);
         
@@ -204,13 +206,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         
     document.getElementById("switch").addEventListener("change", () => {
         document.querySelector("body").style.backgroundColor = document.querySelector("body").style.backgroundColor === "black" ? "white" : "black";
-        document.querySelector("body").style.color = document.querySelector("body").style.color === "rgb(176, 179, 184)" ? "black" : "rgb(176, 179, 184)";
+        document.querySelector("body").style.color = document.querySelector("body").style.color === "rgb(249, 249, 249)" ? "black" : "rgb(249, 249, 249)";
         document.querySelector("#dropdown").style.backgroundColor = document.querySelector("#dropdown").style.backgroundColor === "black" ? "white" : "black";
         document.querySelectorAll("input").forEach((input) => {
-            input.style.backgroundColor = input.style.backgroundColor === "rgb(239, 240, 242)" ? "white" : "rgb(239, 240, 242)";
+            input.style.backgroundColor = input.style.backgroundColor === "rgb(48, 48, 48)" ? "white" : "rgb(48, 48, 48)";
+            input.style.color = input.style.backgroundColor === "rgb(48, 48, 48)" ? "white" : "rgb(48, 48, 48)";
+            input.style.setProperty("--placeholder-color", input.style.backgroundColor === "rgb(48, 48, 48)" ? "rgb(227, 227, 227)" : "rgb(100, 100, 100)") 
         }) 
-
-
+        document.querySelectorAll("button").forEach((button) => {
+            button.style.color = document.querySelector("body").style.backgroundColor === "black" ? "rgb(0, 0, 0)" : "white";
+        })
     })
 
 

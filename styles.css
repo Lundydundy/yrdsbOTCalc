@@ -42,6 +42,10 @@ input {
     text-align: center;
 }
 
+input::placeholder {
+    color: var(--placeholder-color, gray);
+}
+
 .time{
     max-width: fit-content;
     min-width: 50px;
