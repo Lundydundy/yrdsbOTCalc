@@ -51,6 +51,20 @@ input::placeholder {
     min-width: 50px;
 }
 
+.set-time-div{
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    margin: auto;
+    align-items: center;
+    text-align: right;
+}
+
+.timeLabel{
+    text-align: right;
+    min-width: 100px;
+}
+
 .dropdown {
     position: absolute;
     top: 38%;
