@@ -1,5 +1,3 @@
-// import schoolDict from './schoolTimes.json';
-
 document.addEventListener("DOMContentLoaded", async () => {
 
     async function loadSchools() {
@@ -51,14 +49,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         const startTime = timeStringToDate(school.begin) > timeStringToDate(start) ? school.begin : start;
         const endTime = timeStringToDate(school.dismiss) < timeStringToDate(end) ? school.dismiss : end; 
         
-        const recessTime = subtractTimesInMinutes(school.recStart, school.recEnd);
-        const lunchTime = subtractTimesInMinutes(school.lunchStart, school.lunchEnd);
+        const recessTime = startTime < school.recStart || startTime > school.recEnd ? subtractTimesInMinutes(school.recStart, school.recEnd) : subtractTimesInMinutes(startTime, school.recEnd);
+        const lunchTime = startTime < school.lunchStart || startTime > school.lunchEnd ? subtractTimesInMinutes(school.lunchStart, school.lunchEnd) : subtractTimesInMinutes(startTime, school.lunchEnd);
         
         console.log("startTime:", startTime, "\nendTime:", endTime, "\nrecessTime:", recessTime, "\nlunchTime:", lunchTime);
         
         let instructionalTime = subtractTimesInMinutes(startTime, endTime);
-        if(startTime < school.recStart) instructionalTime -= recessTime;
-        if(startTime < school.lunchStart) instructionalTime -= lunchTime;
+        if(startTime < school.recStart || (startTime > school.recStart && startTime < school.recEnd)) instructionalTime -= recessTime;
+        if(startTime < school.lunchStart  || (startTime > school.lunchStartStart && startTime < school.lunchEnd)) instructionalTime -= lunchTime;
 
         console.log("instructionalTime:", instructionalTime);
         
@@ -83,8 +81,33 @@ document.addEventListener("DOMContentLoaded", async () => {
         
     }
 
-    const schoolDict = await loadSchools();
-    
+    const checkForErrors = (schoolName, start, end) => {
+        if(!schoolName || !start || !end) {
+            document.getElementById("error").textContent = "Please fill out all fields";
+            return false;
+        }
+
+        if(!schoolNames.includes(schoolName)) {
+            document.getElementById("error").textContent = "Please enter a valid school name";
+            return false;
+        }
+
+        if(timeStringToDate(start) > timeStringToDate(end)) {
+            document.getElementById("error").textContent = "Start time cannot be later than end time. Make sure to use 24 hour time.";
+            return false;
+        }
+
+        if(timeStringToDate(start) < timeStringToDate("07:45") || timeStringToDate(end) > timeStringToDate("16:05")) {
+            document.getElementById("error").textContent = "Please enter a time between 7:45 and 16:05. Make sure to use 24 hour time.";
+            return false;
+        }
+
+        document.getElementById("error").textContent = "";
+
+        return true;
+
+    }
+
     const schoolNames = [
         "Adrienne Clarkson", "Aldergrove", "Alexander Muir", "Anne Frank", "Armadale",
         "Armitage Village", "Ashton Meadows", "Aurora Grove", "Aurora Heights", "Bakersfield",
@@ -126,9 +149,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         "York Academy 4358", "York Academy 8095", "York Academy 8132", "Yorkhill",
         "YRDSB Elem Virtual School"
     ];
-    
-    // Look up the bell times and add up the instructional minutes (no before/after school or recess/lunch) and divide by 300. The minimum for that would be 0.7 but it is probably more.
 
+    const schoolDict = await loadSchools();
+    
+    
     const searchBox = document.getElementById("searchBox");
     const dropdown = document.getElementById("dropdown");
 
@@ -164,31 +188,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-
-
     document.getElementById("searchButton").addEventListener("click", () => {
         
         const schoolName = document.getElementById("searchBox").value;
         const start = document.getElementById("startTime").value;
         const end = document.getElementById("endTime").value;
 
-        if(!schoolName || !start || !end) {
-            document.getElementById("error").textContent = "Please fill out all fields";
-            return;
-        }
-
-        if(!schoolNames.includes(schoolName)) {
-            document.getElementById("error").textContent = "Please enter a valid school name";
-            return;
-        }
-
-        if(timeStringToDate(start) > timeStringToDate(end)) {
-            document.getElementById("error").textContent = "Start time cannot be later than end time. Make sure to use 24 hour time.";
-            return;
-        }
-
-        document.getElementById("error").textContent = "";
-
+        if(!checkForErrors(schoolName, start, end)) return;
 
         calculate(schoolName, start, end);
     })
@@ -218,40 +224,4 @@ document.addEventListener("DOMContentLoaded", async () => {
         })
     })
 
-
 });
-
-
-
-
-
-    // console.log(schoolDict);
-
-
-    // fs.readFile("./schoolTimes.csv", (err, data) => {
-    //     const dict = {};
-    //     const file = data.toString().split("\n");
-    //     console.log(file)
-
-    //     file.forEach((line, i) => {
-    //         line = line.split(",")
-
-    //         dict[line[0]] = {
-                
-    //             begin: line[5],
-    //             recStart : line[7],
-    //             recEnd : line[9],
-    //             recLen : line[8],
-    //             lunchStart : line[11],
-    //             lunchEnd : line[13],
-    //             dismiss: line[19]
-    //         }
-    //     })
-
-    //     console.log(dict)
-    //     fs.writeFile("./schoolTimes.json", JSON.stringify(dict), (err) => {
-    //         if (err) {
-    //             console.log(err)
-    //         }
-    //     })
-    // })
