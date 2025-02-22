@@ -152,7 +152,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const schoolDict = await loadSchools();
     
-    
     const searchBox = document.getElementById("searchBox");
     const dropdown = document.getElementById("dropdown");
 

@@ -72,7 +72,7 @@ input::placeholder {
 .dropdown {
     position: absolute;
     top: 38%;
-    width: 100%;
+    width: 95%;
     border: 1px solid #ccc;
     border-top: none;
     background: white;
