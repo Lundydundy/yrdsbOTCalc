@@ -234,7 +234,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-
     document.addEventListener("click", function (e) {
         if (!e.target.closest(".autocomplete-container-2")) {
             dropdownInfo.style.display = "none";
@@ -252,14 +251,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         calculate(schoolName, start, end);
     })
 
-    document.getElementById("resetButton").addEventListener("click", () => {
+    document.getElementById("resetButtonCalc").addEventListener("click", () => {
         document.getElementById("searchBoxCalc").value = "";
         document.getElementById("startTime").value = "";
         document.getElementById("endTime").value = "";
         document.getElementById("point").textContent = "0";
         document.getElementById("instructional").textContent = "0";
         document.getElementById("rate").textContent = "0";
-        document.getElementById("error").textContent = "";
+        document.getElementById("errorCalc").textContent = "";
 
     })
 
