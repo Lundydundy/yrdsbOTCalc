@@ -81,30 +81,47 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     }
 
-    const checkForErrors = (schoolName, start, end) => {
-        if (!schoolName || !start || !end) {
-            document.getElementById("error").textContent = "Please fill out all fields";
-            return false;
+    const checkForErrors = (schoolName, start, end, page) => {
+        if (page === "Calc") {
+            if (!schoolName || !start || !end) {
+                document.getElementById(`error${page}`).textContent = "Please fill out all fields";
+                return false;
+            }
+
+            if (!schoolNames.includes(schoolName)) {
+                document.getElementById(`error${page}`).textContent = "Please enter a valid school name";
+                return false;
+            }
+
+            if (timeStringToDate(start) > timeStringToDate(end)) {
+                document.getElementById(`error${page}`).textContent = "Start time cannot be later than end time. Make sure to use 24 hour time.";
+                return false;
+            }
+
+            if (timeStringToDate(start) < timeStringToDate("07:45") || timeStringToDate(end) > timeStringToDate("16:05")) {
+                document.getElementById(`error${page}`).textContent = "Please enter a time between 7:45 and 16:05. Make sure to use 24 hour time.";
+                return false;
+            }
+
+            document.getElementById(`error${page}`).textContent = "";
+
+            return true;
+
+        } else {
+            if (!schoolName) {
+                document.getElementById(`error${page}`).textContent = "Please fill out all fields";
+                return false;
+            }
+
+            if (!schoolNames.includes(schoolName)) {
+                document.getElementById(`error${page}`).textContent = "Please enter a valid school name";
+                return false;
+            }
+
+            document.getElementById(`error${page}`).textContent = "";
+
+            return true;
         }
-
-        if (!schoolNames.includes(schoolName)) {
-            document.getElementById("error").textContent = "Please enter a valid school name";
-            return false;
-        }
-
-        if (timeStringToDate(start) > timeStringToDate(end)) {
-            document.getElementById("error").textContent = "Start time cannot be later than end time. Make sure to use 24 hour time.";
-            return false;
-        }
-
-        if (timeStringToDate(start) < timeStringToDate("07:45") || timeStringToDate(end) > timeStringToDate("16:05")) {
-            document.getElementById("error").textContent = "Please enter a time between 7:45 and 16:05. Make sure to use 24 hour time.";
-            return false;
-        }
-
-        document.getElementById("error").textContent = "";
-
-        return true;
 
     }
 
@@ -230,7 +247,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const start = document.getElementById("startTime").value;
         const end = document.getElementById("endTime").value;
 
-        if (!checkForErrors(schoolName, start, end)) return;
+        if (!checkForErrors(schoolName, start, end, "Calc")) return;
 
         calculate(schoolName, start, end);
     })
@@ -253,9 +270,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.getElementById("InstEnd").textContent = "";
         document.getElementById("Recess").textContent = "";
         document.getElementById("Lunch").textContent = "";
+        document.getElementById("errorInfo").textContent = "";
 
     })
-
 
     document.getElementById("switch").addEventListener("change", () => {
         document.querySelector("body").style.backgroundColor = document.querySelector("body").style.backgroundColor === "black" ? "white" : "black";
@@ -284,18 +301,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     document.getElementById("searchButtonInfo").addEventListener("click", () => {
         const schoolName = document.getElementById("searchBoxInfo").value;
+        if (!checkForErrors(schoolName, 0, 0, "Info")) return;
+        
         const school = schoolDict[schoolName];
-        if (!school) {
-            document.getElementById("resultsInfo").textContent = "Please enter a valid school name";
-            return;
-        }
-
+   
         document.getElementById("schoolName").textContent = schoolName;
         document.getElementById("InstStart").textContent = school.begin;
         document.getElementById("InstEnd").textContent = school.dismiss;
         document.getElementById("Recess").textContent = `${school.recStart} - ${school.recEnd}`;
         document.getElementById("Lunch").textContent = `${school.lunchStart} - ${school.lunchEnd}`;
-    }   
+    }
     )
 
 
