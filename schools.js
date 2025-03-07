@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             console.error("Error loading schools:", error);
         }
     }
-    
+
     function timeStringToDate(timeString) {
         const [hours, minutes] = timeString.split(":").map(Number);
         const date = new Date(); // Current date
@@ -39,65 +39,65 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         return diffMinutes;
     }
-    
+
     const calculate = (schoolName, start, end) => {
         const pay = 286.38
         const school = schoolDict[schoolName];
-        
+
         console.log(school);
-        
+
         const startTime = timeStringToDate(school.begin) > timeStringToDate(start) ? school.begin : start;
-        const endTime = timeStringToDate(school.dismiss) < timeStringToDate(end) ? school.dismiss : end; 
-        
+        const endTime = timeStringToDate(school.dismiss) < timeStringToDate(end) ? school.dismiss : end;
+
         const recessTime = startTime < school.recStart || startTime > school.recEnd ? subtractTimesInMinutes(school.recStart, school.recEnd) : subtractTimesInMinutes(startTime, school.recEnd);
         const lunchTime = startTime < school.lunchStart || startTime > school.lunchEnd ? subtractTimesInMinutes(school.lunchStart, school.lunchEnd) : subtractTimesInMinutes(startTime, school.lunchEnd);
-        
+
         console.log("startTime:", startTime, "\nendTime:", endTime, "\nrecessTime:", recessTime, "\nlunchTime:", lunchTime);
-        
+
         let instructionalTime = subtractTimesInMinutes(startTime, endTime);
-        if(startTime < school.recStart || (startTime > school.recStart && startTime < school.recEnd)) instructionalTime -= recessTime;
-        if(startTime < school.lunchStart  || (startTime > school.lunchStartStart && startTime < school.lunchEnd)) instructionalTime -= lunchTime;
+        if (startTime < school.recStart || (startTime > school.recStart && startTime < school.recEnd)) instructionalTime -= recessTime;
+        if (startTime < school.lunchStart || (startTime > school.lunchStartStart && startTime < school.lunchEnd)) instructionalTime -= lunchTime;
 
         console.log("instructionalTime:", instructionalTime);
-        
+
         let payPoint = instructionalTime / 300;
 
         console.log(payPoint);
-        
+
         // if the user starts before lunch and finishes after lunch or works less than 0.5
-        if(timeStringToDate(start) < timeStringToDate(school.lunchStart) && timeStringToDate(end) > timeStringToDate(school.lunchEnd) && payPoint < 0.7) {
+        if (timeStringToDate(start) < timeStringToDate(school.lunchStart) && timeStringToDate(end) > timeStringToDate(school.lunchEnd) && payPoint < 0.7) {
             payPoint = 0.7;
         } else if (payPoint < 0.5) {
             payPoint = 0.5;
         }
-        
+
         console.log(payPoint.toFixed(1));
-        
+
         console.log(parseFloat(pay * payPoint).toFixed(2));
 
         document.getElementById("point").textContent = payPoint.toFixed(1);
         document.getElementById("instructional").textContent = `${instructionalTime} mins`;
         document.getElementById("rate").textContent = parseFloat(pay * payPoint.toFixed(1)).toFixed(2);
-        
+
     }
 
     const checkForErrors = (schoolName, start, end) => {
-        if(!schoolName || !start || !end) {
+        if (!schoolName || !start || !end) {
             document.getElementById("error").textContent = "Please fill out all fields";
             return false;
         }
 
-        if(!schoolNames.includes(schoolName)) {
+        if (!schoolNames.includes(schoolName)) {
             document.getElementById("error").textContent = "Please enter a valid school name";
             return false;
         }
 
-        if(timeStringToDate(start) > timeStringToDate(end)) {
+        if (timeStringToDate(start) > timeStringToDate(end)) {
             document.getElementById("error").textContent = "Start time cannot be later than end time. Make sure to use 24 hour time.";
             return false;
         }
 
-        if(timeStringToDate(start) < timeStringToDate("07:45") || timeStringToDate(end) > timeStringToDate("16:05")) {
+        if (timeStringToDate(start) < timeStringToDate("07:45") || timeStringToDate(end) > timeStringToDate("16:05")) {
             document.getElementById("error").textContent = "Please enter a time between 7:45 and 16:05. Make sure to use 24 hour time.";
             return false;
         }
@@ -151,55 +151,92 @@ document.addEventListener("DOMContentLoaded", async () => {
     ];
 
     const schoolDict = await loadSchools();
-    
-    const searchBox = document.getElementById("searchBox");
-    const dropdown = document.getElementById("dropdown");
 
-    searchBox.addEventListener("input", function() {
+    const searchBoxCalc = document.getElementById("searchBoxCalc");
+    const searchBoxInfo = document.getElementById("searchBoxInfo");
+
+    const dropdownCalc = document.getElementById("dropdownCalc");
+    const dropdownInfo = document.getElementById("dropdownInfo");
+
+
+    searchBoxCalc.addEventListener("input", function () {
         const input = this.value.toLowerCase();
-        dropdown.innerHTML = "";
+        dropdownCalc.innerHTML = "";
         if (!input) {
-            dropdown.style.display = "none";
+            dropdownCalc.style.display = "none";
             return;
         }
-        
+
         const filtered = schoolNames.filter(name => name.toLowerCase().includes(input));
 
         if (filtered.length > 0) {
-            dropdown.style.display = "block";
+            dropdownCalc.style.display = "block";
             filtered.forEach(name => {
                 const option = document.createElement("div");
                 option.textContent = name;
-                option.addEventListener("click", function() {
-                    searchBox.value = name;
-                    dropdown.style.display = "none";
+                option.addEventListener("click", function () {
+                    searchBoxCalc.value = name;
+                    dropdownCalc.style.display = "none";
                 });
-                dropdown.appendChild(option);
+                dropdownCalc.appendChild(option);
             });
         } else {
-            dropdown.style.display = "none";
+            dropdownCalc.style.display = "none";
         }
     });
 
-    document.addEventListener("click", function(e) {
+    searchBoxInfo.addEventListener("input", function () {
+        const input = this.value.toLowerCase();
+        dropdownInfo.innerHTML = "";
+        if (!input) {
+            dropdownInfo.style.display = "none";
+            return;
+        }
+
+        const filtered = schoolNames.filter(name => name.toLowerCase().includes(input));
+
+        if (filtered.length > 0) {
+            dropdownInfo.style.display = "block";
+            filtered.forEach(name => {
+                const option = document.createElement("div");
+                option.textContent = name;
+                option.addEventListener("click", function () {
+                    searchBoxInfo.value = name;
+                    dropdownInfo.style.display = "none";
+                });
+                dropdownInfo.appendChild(option);
+            });
+        } else {
+            dropdownInfo.style.display = "none";
+        }
+    });
+
+    document.addEventListener("click", function (e) {
         if (!e.target.closest(".autocomplete-container")) {
-            dropdown.style.display = "none";
+            dropdownCalc.style.display = "none";
+        }
+    });
+
+
+    document.addEventListener("click", function (e) {
+        if (!e.target.closest(".autocomplete-container-2")) {
+            dropdownInfo.style.display = "none";
         }
     });
 
     document.getElementById("searchButton").addEventListener("click", () => {
-        
-        const schoolName = document.getElementById("searchBox").value;
+
+        const schoolName = document.getElementById("searchBoxCalc").value;
         const start = document.getElementById("startTime").value;
         const end = document.getElementById("endTime").value;
 
-        if(!checkForErrors(schoolName, start, end)) return;
+        if (!checkForErrors(schoolName, start, end)) return;
 
         calculate(schoolName, start, end);
     })
 
     document.getElementById("resetButton").addEventListener("click", () => {
-        document.getElementById("searchBox").value = "";
+        document.getElementById("searchBoxCalc").value = "";
         document.getElementById("startTime").value = "";
         document.getElementById("endTime").value = "";
         document.getElementById("point").textContent = "0";
@@ -208,7 +245,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.getElementById("error").textContent = "";
 
     })
-        
+
     document.getElementById("switch").addEventListener("change", () => {
         document.querySelector("body").style.backgroundColor = document.querySelector("body").style.backgroundColor === "black" ? "white" : "black";
         document.querySelector("body").style.color = document.querySelector("body").style.color === "rgb(249, 249, 249)" ? "black" : "rgb(249, 249, 249)";
@@ -216,11 +253,38 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.querySelectorAll("input").forEach((input) => {
             input.style.backgroundColor = input.style.backgroundColor === "rgb(48, 48, 48)" ? "white" : "rgb(48, 48, 48)";
             input.style.color = input.style.backgroundColor === "rgb(48, 48, 48)" ? "white" : "rgb(48, 48, 48)";
-            input.style.setProperty("--placeholder-color", input.style.backgroundColor === "rgb(48, 48, 48)" ? "rgb(227, 227, 227)" : "rgb(100, 100, 100)") 
-        }) 
+            input.style.setProperty("--placeholder-color", input.style.backgroundColor === "rgb(48, 48, 48)" ? "rgb(227, 227, 227)" : "rgb(100, 100, 100)")
+        })
         document.querySelectorAll("button").forEach((button) => {
             button.style.color = document.querySelector("body").style.backgroundColor === "black" ? "rgb(0, 0, 0)" : "white";
         })
     })
+
+    document.getElementById("calculator-page-btn").addEventListener("click", () => {
+        document.getElementById("calculator-page").style.display = "block";
+        document.getElementById("school-info-page").style.display = "none";
+    })
+
+    document.getElementById("school-info-page-btn").addEventListener("click", () => {
+        document.getElementById("calculator-page").style.display = "none";
+        document.getElementById("school-info-page").style.display = "block";
+    })
+
+    document.getElementById("searchButtonInfo").addEventListener("click", () => {
+        const schoolName = document.getElementById("searchBoxInfo").value;
+        const school = schoolDict[schoolName];
+        if (!school) {
+            document.getElementById("resultsInfo").textContent = "Please enter a valid school name";
+            return;
+        }
+
+        document.getElementById("schoolName").textContent = schoolName;
+        document.getElementById("InstStart").textContent = school.begin;
+        document.getElementById("InstEnd").textContent = school.dismiss;
+        document.getElementById("Recess").textContent = `${school.recStart} - ${school.recEnd}`;
+        document.getElementById("Lunch").textContent = `${school.lunchStart} - ${school.lunchEnd}`;
+    }   
+    )
+
 
 });
