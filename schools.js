@@ -260,7 +260,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("switch").addEventListener("change", () => {
         document.querySelector("body").style.backgroundColor = document.querySelector("body").style.backgroundColor === "black" ? "white" : "black";
         document.querySelector("body").style.color = document.querySelector("body").style.color === "rgb(249, 249, 249)" ? "black" : "rgb(249, 249, 249)";
-        document.querySelector("#dropdown").style.backgroundColor = document.querySelector("#dropdown").style.backgroundColor === "black" ? "white" : "black";
+        document.querySelector("#dropdownCalc").style.backgroundColor = document.querySelector("#dropdownCalc").style.backgroundColor === "black" ? "white" : "black";
+        document.querySelector("#dropdownInfo").style.backgroundColor = document.querySelector("#dropdownInfo").style.backgroundColor === "black" ? "white" : "black";
         document.querySelectorAll("input").forEach((input) => {
             input.style.backgroundColor = input.style.backgroundColor === "rgb(48, 48, 48)" ? "white" : "rgb(48, 48, 48)";
             input.style.color = input.style.backgroundColor === "rgb(48, 48, 48)" ? "white" : "rgb(48, 48, 48)";
