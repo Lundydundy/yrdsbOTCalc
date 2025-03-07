@@ -246,6 +246,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     })
 
+    document.getElementById("resetButtonInfo").addEventListener("click", () => {
+        document.getElementById("searchBoxInfo").value = "";
+        document.getElementById("schoolName").textContent = "";
+        document.getElementById("InstStart").textContent = "";
+        document.getElementById("InstEnd").textContent = "";
+        document.getElementById("Recess").textContent = "";
+        document.getElementById("Lunch").textContent = "";
+
+    })
+
+
     document.getElementById("switch").addEventListener("change", () => {
         document.querySelector("body").style.backgroundColor = document.querySelector("body").style.backgroundColor === "black" ? "white" : "black";
         document.querySelector("body").style.color = document.querySelector("body").style.color === "rgb(249, 249, 249)" ? "black" : "rgb(249, 249, 249)";
