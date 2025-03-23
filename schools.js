@@ -75,9 +75,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         console.log(parseFloat(pay * payPoint).toFixed(2));
 
-        document.getElementById("point").textContent = payPoint.toFixed(1);
+        document.getElementById("point").textContent = payPoint.toString().length > 5 ? payPoint.toFixed(4) : payPoint;
         document.getElementById("instructional").textContent = `${instructionalTime} mins`;
-        document.getElementById("rate").textContent = parseFloat(pay * payPoint.toFixed(1)).toFixed(2);
+        document.getElementById("rate").textContent = parseFloat(pay * payPoint).toFixed(2);
 
     }
 
@@ -284,7 +284,13 @@ document.addEventListener("DOMContentLoaded", async () => {
             input.style.setProperty("--placeholder-color", input.style.backgroundColor === "rgb(48, 48, 48)" ? "rgb(227, 227, 227)" : "rgb(100, 100, 100)")
         })
         document.querySelectorAll("button").forEach((button) => {
-            button.style.color = document.querySelector("body").style.backgroundColor === "black" ? "rgb(0, 0, 0)" : "white";
+            button.style.color = document.querySelector("body").style.backgroundColor === "black" ? "rgb(211, 208, 208)" : "white";
+        })
+        document.querySelectorAll("#searchButton, #searchButtonInfo").forEach((button) => {
+            button.style.backgroundColor = document.querySelector("body").style.backgroundColor === "black" ? "rgb(55, 125, 58)" : "rgb(76, 175, 80)";
+        })
+        document.querySelectorAll(".reset").forEach((button) => {
+            button.style.backgroundColor = document.querySelector("body").style.backgroundColor === "black" ? "rgb(136, 16, 8)" : "rgb(234, 20, 6)";
         })
     })
 

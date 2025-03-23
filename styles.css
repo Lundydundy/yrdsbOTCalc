@@ -111,11 +111,11 @@ button{
 }
 
 .reset:hover{
-    background-color: #f2857d;
+    background-color: #dc908a !important;
 }
 
 button:hover {
-    background-color: #9bdb9f;
+    background-color: #93bd95 !important;
 }
 
 #errorCalc, #errorInfo{
@@ -179,6 +179,10 @@ button:hover {
     transform: translateX(26px);
   }
   
+  .set-time-div::after{
+    display: none;
+
+  }
   /* Rounded sliders */
   .slider.round {
     border-radius: 34px;
