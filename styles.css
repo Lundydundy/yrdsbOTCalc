@@ -195,3 +195,7 @@ button:hover {
   .school-info{
     display: none;
   }
+
+  .info{
+    top: 50%;
+  }
