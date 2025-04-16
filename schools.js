@@ -49,36 +49,94 @@ document.addEventListener("DOMContentLoaded", async () => {
         const startTime = timeStringToDate(school.begin) > timeStringToDate(start) ? school.begin : start;
         const endTime = timeStringToDate(school.dismiss) < timeStringToDate(end) ? school.dismiss : end;
 
-        const recessTime = startTime < school.recStart || startTime > school.recEnd ? subtractTimesInMinutes(school.recStart, school.recEnd) : subtractTimesInMinutes(startTime, school.recEnd);
-        const lunchTime = startTime < school.lunchStart || startTime > school.lunchEnd ? subtractTimesInMinutes(school.lunchStart, school.lunchEnd) : subtractTimesInMinutes(startTime, school.lunchEnd);
-
-        console.log("startTime:", startTime, "\nendTime:", endTime, "\nrecessTime:", recessTime, "\nlunchTime:", lunchTime);
-
+        // Calculate total time between start and end
         let instructionalTime = subtractTimesInMinutes(startTime, endTime);
-        if (startTime < school.recStart || (startTime > school.recStart && startTime < school.recEnd)) instructionalTime -= recessTime;
-        if (startTime < school.lunchStart || (startTime > school.lunchStartStart && startTime < school.lunchEnd)) instructionalTime -= lunchTime;
+        console.log("Total time:", instructionalTime);
 
-        console.log("instructionalTime:", instructionalTime);
+        // Handle recess time calculations
+        let recessMinutes = 0;
+        const startTimeDate = timeStringToDate(startTime);
+        const endTimeDate = timeStringToDate(endTime);
+        const recessStartDate = timeStringToDate(school.recStart);
+        const recessEndDate = timeStringToDate(school.recEnd);
 
-        let payPoint = instructionalTime / 300;
-
-        console.log(payPoint);
-
-        // if the user starts before lunch and finishes after lunch or works less than 0.5
-        if (timeStringToDate(start) < timeStringToDate(school.lunchStart) && timeStringToDate(end) > timeStringToDate(school.lunchEnd) && payPoint < 0.7) {
-            payPoint = 0.7;
-        } else if (payPoint < 0.5) {
-            payPoint = 0.5;
+        // If start time is before recess and end time is after recess start
+        if (startTimeDate < recessStartDate && endTimeDate > recessStartDate) {
+            // If end time is during recess
+            if (endTimeDate <= recessEndDate) {
+                recessMinutes = subtractTimesInMinutes(school.recStart, endTime);
+            } 
+            // If end time is after recess
+            else {
+                recessMinutes = subtractTimesInMinutes(school.recStart, school.recEnd);
+            }
+        } 
+        // If start time is during recess
+        else if (startTimeDate >= recessStartDate && startTimeDate < recessEndDate) {
+            // If end time is during recess
+            if (endTimeDate <= recessEndDate) {
+                recessMinutes = subtractTimesInMinutes(startTime, endTime);
+            } 
+            // If end time is after recess
+            else {
+                recessMinutes = subtractTimesInMinutes(startTime, school.recEnd);
+            }
         }
 
-        console.log(payPoint.toFixed(1));
+        console.log("Recess minutes to subtract:", recessMinutes);
+        
+        // Handle lunch time calculations
+        let lunchMinutes = 0;
+        const lunchStartDate = timeStringToDate(school.lunchStart);
+        const lunchEndDate = timeStringToDate(school.lunchEnd);
 
-        console.log(parseFloat(pay * payPoint).toFixed(2));
+        // If start time is before lunch and end time is after lunch start
+        if (startTimeDate < lunchStartDate && endTimeDate > lunchStartDate) {
+            // If end time is during lunch
+            if (endTimeDate <= lunchEndDate) {
+                lunchMinutes = subtractTimesInMinutes(school.lunchStart, endTime);
+            } 
+            // If end time is after lunch
+            else {
+                lunchMinutes = subtractTimesInMinutes(school.lunchStart, school.lunchEnd);
+            }
+        } 
+        // If start time is during lunch
+        else if (startTimeDate >= lunchStartDate && startTimeDate < lunchEndDate) {
+            // If end time is during lunch
+            if (endTimeDate <= lunchEndDate) {
+                lunchMinutes = subtractTimesInMinutes(startTime, endTime);
+            } 
+            // If end time is after lunch
+            else {
+                lunchMinutes = subtractTimesInMinutes(startTime, school.lunchEnd);
+            }
+        }
+
+        console.log("Lunch minutes to subtract:", lunchMinutes);
+
+        // Subtract non-instructional time
+        instructionalTime = instructionalTime - recessMinutes - lunchMinutes;
+        console.log("Final instructional time:", instructionalTime);
+
+        let payPoint = instructionalTime / 300;
+        console.log("Initial pay point:", payPoint);
+
+        // Apply minimum pay rules
+        if (timeStringToDate(start) < lunchStartDate && timeStringToDate(end) > lunchEndDate && payPoint < 0.7) {
+            payPoint = 0.7;
+            console.log("Applied 0.7 minimum pay rule");
+        } else if (payPoint < 0.5) {
+            payPoint = 0.5;
+            console.log("Applied 0.5 minimum pay rule");
+        }
+
+        console.log("Final pay point:", payPoint.toFixed(2));
+        console.log("Pay amount:", parseFloat(pay * payPoint).toFixed(2));
 
         document.getElementById("point").textContent = payPoint.toString().length > 5 ? payPoint.toFixed(4) : payPoint;
         document.getElementById("instructional").textContent = `${instructionalTime} mins`;
         document.getElementById("rate").textContent = parseFloat(pay * payPoint).toFixed(2);
-
     }
 
     const checkForErrors = (schoolName, start, end, page) => {
