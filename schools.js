@@ -175,68 +175,157 @@ document.addEventListener("DOMContentLoaded", async () => {
     const dropdownCalc = document.getElementById("dropdownCalc");
     const dropdownInfo = document.getElementById("dropdownInfo");
 
+    // Track active index for keyboard navigation
+    let activeIndex = -1;
+    let currentDropdown = null;
+    let filteredSchools = [];
 
-    searchBoxCalc.addEventListener("input", function () {
-        const input = this.value.toLowerCase();
-        dropdownCalc.innerHTML = "";
+    // Enhanced autocomplete function that works for both search boxes
+    function handleAutocomplete(searchBox, dropdown) {
+        const input = searchBox.value.toLowerCase();
+        dropdown.innerHTML = "";
+        filteredSchools = [];
+        activeIndex = -1;
+        
         if (!input) {
-            dropdownCalc.style.display = "none";
+            dropdown.style.display = "none";
             return;
         }
 
-        const filtered = schoolNames.filter(name => name.toLowerCase().includes(input));
+        filteredSchools = schoolNames.filter(name => name.toLowerCase().includes(input));
 
-        if (filtered.length > 0) {
-            dropdownCalc.style.display = "block";
-            filtered.forEach(name => {
+        if (filteredSchools.length > 0) {
+            dropdown.style.display = "block";
+            currentDropdown = dropdown;
+            
+            // Ensure the dropdown is properly positioned below the input
+            const searchBoxRect = searchBox.getBoundingClientRect();
+            const containerRect = searchBox.closest('.autocomplete-container, .autocomplete-container-2').getBoundingClientRect();
+            dropdown.style.top = (searchBoxRect.bottom - containerRect.top) + 'px';
+            
+            filteredSchools.forEach((name, index) => {
                 const option = document.createElement("div");
                 option.textContent = name;
-                option.addEventListener("click", function () {
-                    searchBoxCalc.value = name;
-                    dropdownCalc.style.display = "none";
+                
+                // Highlight the matching part of the text
+                const matchIndex = name.toLowerCase().indexOf(input.toLowerCase());
+                if (matchIndex !== -1) {
+                    const before = name.substring(0, matchIndex);
+                    const match = name.substring(matchIndex, matchIndex + input.length);
+                    const after = name.substring(matchIndex + input.length);
+                    option.innerHTML = before + '<strong>' + match + '</strong>' + after;
+                }
+                
+                option.addEventListener("click", function() {
+                    searchBox.value = name;
+                    dropdown.style.display = "none";
+                    activeIndex = -1;
                 });
-                dropdownCalc.appendChild(option);
+                
+                option.addEventListener("mouseover", function() {
+                    resetActiveStyles(dropdown);
+                    option.classList.add("active");
+                    activeIndex = index;
+                });
+                
+                dropdown.appendChild(option);
             });
         } else {
-            dropdownCalc.style.display = "none";
+            dropdown.style.display = "none";
         }
-    });
+    }
 
-    searchBoxInfo.addEventListener("input", function () {
-        const input = this.value.toLowerCase();
-        dropdownInfo.innerHTML = "";
-        if (!input) {
-            dropdownInfo.style.display = "none";
+    // Reset active styles in dropdown
+    function resetActiveStyles(dropdown) {
+        const items = dropdown.querySelectorAll("div");
+        items.forEach(item => item.classList.remove("active"));
+    }
+
+    // Handle keyboard navigation
+    function handleKeyDown(e, searchBox, dropdown) {
+        if (!dropdown.style.display || dropdown.style.display === "none") {
             return;
         }
 
-        const filtered = schoolNames.filter(name => name.toLowerCase().includes(input));
-
-        if (filtered.length > 0) {
-            dropdownInfo.style.display = "block";
-            filtered.forEach(name => {
-                const option = document.createElement("div");
-                option.textContent = name;
-                option.addEventListener("click", function () {
-                    searchBoxInfo.value = name;
-                    dropdownInfo.style.display = "none";
-                });
-                dropdownInfo.appendChild(option);
-            });
-        } else {
-            dropdownInfo.style.display = "none";
+        const items = dropdown.querySelectorAll("div");
+        
+        // Down arrow
+        if (e.key === "ArrowDown") {
+            e.preventDefault();
+            activeIndex = (activeIndex < items.length - 1) ? activeIndex + 1 : 0;
+            resetActiveStyles(dropdown);
+            items[activeIndex].classList.add("active");
+            
+            // Scroll into view if needed
+            if (items[activeIndex].offsetTop >= dropdown.scrollTop + dropdown.clientHeight || 
+                items[activeIndex].offsetTop < dropdown.scrollTop) {
+                items[activeIndex].scrollIntoView({ block: "nearest" });
+            }
+        } 
+        // Up arrow
+        else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            activeIndex = (activeIndex > 0) ? activeIndex - 1 : items.length - 1;
+            resetActiveStyles(dropdown);
+            items[activeIndex].classList.add("active");
+            
+            // Scroll into view if needed
+            if (items[activeIndex].offsetTop >= dropdown.scrollTop + dropdown.clientHeight || 
+                items[activeIndex].offsetTop < dropdown.scrollTop) {
+                items[activeIndex].scrollIntoView({ block: "nearest" });
+            }
+        } 
+        // Enter key
+        else if (e.key === "Enter" && activeIndex >= 0) {
+            e.preventDefault();
+            searchBox.value = filteredSchools[activeIndex];
+            dropdown.style.display = "none";
+            activeIndex = -1;
         }
+        // Escape key
+        else if (e.key === "Escape") {
+            dropdown.style.display = "none";
+            activeIndex = -1;
+        }
+    }
+
+    // Set up event listeners for searchBoxCalc
+    searchBoxCalc.addEventListener("input", function() {
+        handleAutocomplete(searchBoxCalc, dropdownCalc);
     });
 
-    document.addEventListener("click", function (e) {
-        if (!e.target.closest(".autocomplete-container")) {
+    searchBoxCalc.addEventListener("keydown", function(e) {
+        handleKeyDown(e, searchBoxCalc, dropdownCalc);
+    });
+
+    // Set up event listeners for searchBoxInfo
+    searchBoxInfo.addEventListener("input", function() {
+        handleAutocomplete(searchBoxInfo, dropdownInfo);
+    });
+
+    searchBoxInfo.addEventListener("keydown", function(e) {
+        handleKeyDown(e, searchBoxInfo, dropdownInfo);
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener("click", function(e) {
+        if (!e.target.closest(".autocomplete-container") && !e.target.closest(".autocomplete-container-2")) {
             dropdownCalc.style.display = "none";
+            dropdownInfo.style.display = "none";
+            activeIndex = -1;
         }
     });
 
-    document.addEventListener("click", function (e) {
-        if (!e.target.closest(".autocomplete-container-2")) {
-            dropdownInfo.style.display = "none";
+    // Focus handlers to show dropdown
+    searchBoxCalc.addEventListener("focus", function() {
+        if (this.value) {
+            handleAutocomplete(searchBoxCalc, dropdownCalc);
+        }
+    });
+
+    searchBoxInfo.addEventListener("focus", function() {
+        if (this.value) {
+            handleAutocomplete(searchBoxInfo, dropdownInfo);
         }
     });
 
