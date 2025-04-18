@@ -6,6 +6,41 @@
  */
 
 document.addEventListener('DOMContentLoaded', async function() {
+  // Mobile menu toggle - CONSOLIDATED VERSION
+  const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
+  const appNav = document.querySelector('.app-nav');
+  
+  if (mobileMenuToggle && appNav) {
+    mobileMenuToggle.setAttribute('aria-expanded', 'false');
+    mobileMenuToggle.setAttribute('aria-label', 'Toggle navigation menu');
+    
+    mobileMenuToggle.addEventListener('click', function() {
+      appNav.classList.toggle('active');
+      // Toggle aria-expanded attribute for accessibility
+      const expanded = appNav.classList.contains('active');
+      mobileMenuToggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    });
+    
+    // Close mobile menu when clicking outside
+    document.addEventListener('click', function(event) {
+      if (!appNav.contains(event.target) && !mobileMenuToggle.contains(event.target) && appNav.classList.contains('active')) {
+        appNav.classList.remove('active');
+        mobileMenuToggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+    
+    // Close mobile menu when clicking on navigation items
+    const navTabs = document.querySelectorAll('.nav-tab');
+    navTabs.forEach(tab => {
+      tab.addEventListener('click', function() {
+        if (window.innerWidth <= 768) {
+          appNav.classList.remove('active');
+          mobileMenuToggle.setAttribute('aria-expanded', 'false');
+        }
+      });
+    });
+  }
+  
   // Global variables
   let schoolDict = {};
   let schoolNames = [];
@@ -61,6 +96,32 @@ document.addEventListener('DOMContentLoaded', async function() {
   
   // Theme toggle
   const themeToggle = document.getElementById('theme-toggle');
+  
+  // Handle mobile menu toggle
+  if (mobileMenuToggle) {
+    mobileMenuToggle.addEventListener('click', function() {
+      appNav.classList.toggle('active');
+    });
+    
+    // Close mobile menu when a navigation item is clicked
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+      tab.addEventListener('click', function() {
+        if (window.innerWidth <= 768) {
+          appNav.classList.remove('active');
+        }
+      });
+    });
+    
+    // Close mobile menu when clicking outside
+    document.addEventListener('click', function(event) {
+      const isClickInsideNav = appNav.contains(event.target);
+      const isClickOnToggle = mobileMenuToggle.contains(event.target);
+      
+      if (!isClickInsideNav && !isClickOnToggle && appNav.classList.contains('active')) {
+        appNav.classList.remove('active');
+      }
+    });
+  }
   
   // Constants
   const BASE_PAY_RATE = 286.38;
@@ -682,6 +743,33 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   }
   
+  // Add mobile menu toggle functionality
+  const menuToggle = document.querySelector('.mobile-menu-toggle');
+  const nav = document.querySelector('.app-nav');
+  
+  if (menuToggle) {
+    menuToggle.addEventListener('click', function() {
+      nav.classList.toggle('active');
+    });
+  }
+  
+  // Close menu when a nav item is clicked
+  const navTabs = document.querySelectorAll('.nav-tab');
+  navTabs.forEach(tab => {
+    tab.addEventListener('click', function() {
+      if (window.innerWidth <= 768) {
+        nav.classList.remove('active');
+      }
+    });
+  });
+
+  // Close menu when clicking outside
+  document.addEventListener('click', function(e) {
+    if (!nav.contains(e.target) && !menuToggle.contains(e.target) && nav.classList.contains('active')) {
+      nav.classList.remove('active');
+    }
+  });
+
   // Initialize the application
   async function init() {
     // Load school data
