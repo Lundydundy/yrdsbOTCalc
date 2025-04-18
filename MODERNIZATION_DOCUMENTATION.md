@@ -40,6 +40,7 @@ Our modernization approach focused on:
 - Time periods (instructional, recess, lunch) are rendered with appropriate positioning
 - Interactive handles allow teachers to drag and select time ranges
 - The timeline syncs bidirectionally with the traditional time inputs
+- Extended the timeline end to 16:05 while maintaining 16:00 as the final displayed marker to ensure proper visualization of end-of-day times and prevent truncation issues
 
 #### 2. Modern UI Design System
 

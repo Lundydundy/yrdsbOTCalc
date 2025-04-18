@@ -1,0 +1,13 @@
+# Ignore documentation files
+*_DOCUMENTATION.md
+MODERNIZATION_DOCUMENTATION.md
+TECHNICAL_DOCUMENTATION.md
+
+# But don't ignore the README
+!README.md
+
+# Common files to ignore
+.DS_Store
+node_modules/
+.env
+.vscode/

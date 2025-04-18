@@ -24,7 +24,7 @@ class SchoolTimeline {
     this.endTime = null;
     this.timelineWidth = 100;
     this.dayStartTime = "07:40";
-    this.dayEndTime = "16:05";
+    this.dayEndTime = "16:05"; // Extended to 16:05 to ensure full visibility of the 16:00 marker
     this.onChange = null;
   }
   
@@ -36,6 +36,7 @@ class SchoolTimeline {
 - **Class-based approach:** Used an OOP pattern for better encapsulation and to allow multiple timeline instances (calculator and info pages)
 - **Container-based rendering:** The timeline accepts a container element, making it reusable across different parts of the application
 - **School object injection:** Passes the school data as a dependency rather than coupling it directly to the data source
+- **Extended end time:** The dayEndTime is set to 16:05 instead of 16:00 to ensure the 16:00 marker is fully visible, while the timeline still displays hourly markers up to 16:00
 
 ### Time Conversion Methods
 
