@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YRDSB OT Daily Rate Calculator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="modern-styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="container">
+      <h1 class="app-title">YRDSB OT Daily Rate Calculator</h1>
+      <nav class="app-nav">
+        <a id="calculator-tab" class="nav-tab active">Calculator</a>
+        <a id="info-tab" class="nav-tab">School Information</a>
+        <label class="theme-switch">
+          <input type="checkbox" id="theme-toggle">
+          <span class="theme-slider"></span>
+        </label>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Calculator Page -->
+    <div id="calculator-page">
+      <!-- School Selection Card -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Select School</h2>
+        </div>
+        <div class="form-group">
+          <label for="searchBoxCalc" class="form-label">School Name</label>
+          <div class="search-container">
+            <i class="fas fa-search search-icon"></i>
+            <input 
+              type="text" 
+              id="searchBoxCalc" 
+              class="search-input" 
+              placeholder="Type a school name..." 
+              autocomplete="off"
+            >
+            <div id="dropdownCalc" class="autocomplete-dropdown"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline Card -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Select Work Hours</h2>
+        </div>
+        
+        <!-- Visual Timeline will be rendered here -->
+        <div id="timeline-container"></div>
+        
+        <div class="form-group">
+          <div class="form-row">
+            <div class="form-col">
+              <label for="startTime" class="form-label">Start Time</label>
+              <input type="time" id="startTime" class="form-control" min="07:40" max="16:05">
+            </div>
+            <div class="form-col">
+              <label for="endTime" class="form-label">End Time</label>
+              <input type="time" id="endTime" class="form-control" min="07:40" max="16:05">
+            </div>
+          </div>
+        </div>
+        
+        <!-- Common Work Hour Presets -->
+        <div class="presets-container">
+          <div class="presets-title">Common Presets:</div>
+          <div class="presets-buttons">
+            <button class="preset-btn" data-preset="full-day">Full Day</button>
+            <button class="preset-btn" data-preset="am-only">AM Only</button>
+            <button class="preset-btn" data-preset="pm-only">PM Only</button>
+          </div>
+        </div>
+        
+        <div class="btn-group">
+          <button id="calculateBtn" class="btn btn-primary">
+            <i class="fas fa-calculator"></i> Calculate
+          </button>
+          <button id="resetButtonCalc" class="btn btn-secondary">
+            <i class="fas fa-redo"></i> Reset
+          </button>
+        </div>
+        
+        <div id="errorCalc" class="error-message"></div>
+      </div>
+
+      <!-- Results Card -->
+      <div class="card results-card">
+        <div class="card-header">
+          <h2 class="card-title">Results</h2>
+        </div>
+        
+        <div class="result-circle">
+          <div class="result-value" id="point">0</div>
+          <div class="result-label">Pay Point</div>
+        </div>
+        
+        <div class="result-details">
+          <div class="result-item">
+            <span>Pay Rate</span>
+            <strong>$<span id="rate">0</span></strong>
+          </div>
+          <div class="result-item">
+            <span>Instructional Time</span>
+            <strong><span id="instructional">0</span> mins</strong>
+          </div>
+        </div>
+        
+        <!-- Add Pay Explanation Section -->
+        <div id="pay-explanation" class="pay-explanation">
+          <div class="explanation-toggle">
+            <button id="toggle-explanation" class="btn-link">
+              <i class="fas fa-info-circle"></i> How was this calculated?
+            </button>
+          </div>
+          <div id="explanation-details" class="explanation-details" style="display: none;">
+            <div class="explanation-item">
+              <span>Total Work Time:</span>
+              <span id="total-time">0 mins</span>
+            </div>
+            <div class="explanation-item">
+              <span>Recess Time Subtracted:</span>
+              <span id="recess-time">0 mins</span>
+            </div>
+            <div class="explanation-item">
+              <span>Lunch Time Subtracted:</span>
+              <span id="lunch-time">0 mins</span>
+            </div>
+            <div class="explanation-item">
+              <span>Instructional Minutes:</span>
+              <span id="instr-minutes">0 mins</span>
+            </div>
+            <div class="explanation-separator"></div>
+            <div class="explanation-item">
+              <span>Pay Point Calculation:</span>
+              <span id="point-calc">0 mins ÷ 300 = 0</span>
+            </div>
+            <div id="min-pay-applied" class="explanation-item minimum-rule">
+              <span>Minimum Pay Rule Applied:</span>
+              <span id="min-rule">None</span>
+            </div>
+            <div class="explanation-item">
+              <span>Final Calculation:</span>
+              <span id="final-calc">$286.38 × 0 = $0.00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- School Info Page -->
+    <div id="school-info-page" style="display:none;">
+      <!-- School Selection Card -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">YRDSB School Information</h2>
+        </div>
+        <div class="form-group">
+          <label for="searchBoxInfo" class="form-label">School Name</label>
+          <div class="search-container">
+            <i class="fas fa-search search-icon"></i>
+            <input 
+              type="text" 
+              id="searchBoxInfo" 
+              class="search-input" 
+              placeholder="Type a school name..." 
+              autocomplete="off"
+            >
+            <div id="dropdownInfo" class="autocomplete-dropdown"></div>
+          </div>
+        </div>
+        
+        <div class="btn-group">
+          <button id="searchButtonInfo" class="btn btn-primary">
+            <i class="fas fa-info-circle"></i> Show Details
+          </button>
+          <button id="resetButtonInfo" class="btn btn-secondary">
+            <i class="fas fa-redo"></i> Reset
+          </button>
+        </div>
+        
+        <div id="errorInfo" class="error-message"></div>
+      </div>
+
+      <!-- School Details Card -->
+      <div class="card results-card">
+        <div class="card-header">
+          <h2 class="card-title">School Details</h2>
+        </div>
+        
+        <div class="result-details">
+          <div class="result-item">
+            <span>School Name</span>
+            <strong id="schoolName">-</strong>
+          </div>
+          <div class="result-item">
+            <span>Instructional Start</span>
+            <strong id="InstStart">-</strong>
+          </div>
+          <div class="result-item">
+            <span>Instructional End</span>
+            <strong id="InstEnd">-</strong>
+          </div>
+          <div class="result-item">
+            <span>Recess</span>
+            <strong id="Recess">-</strong>
+          </div>
+          <div class="result-item">
+            <span>Lunch</span>
+            <strong id="Lunch">-</strong>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Visual Timeline for School Info -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">School Day Timeline</h2>
+        </div>
+        
+        <!-- Visual Timeline will be rendered here -->
+        <div id="info-timeline-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="timeline.js"></script>
+  <script src="modern-app.js"></script>
+</body>
+</html>
