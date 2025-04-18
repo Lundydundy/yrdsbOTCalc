@@ -10,7 +10,7 @@ class SchoolTimeline {
     this.startTime = null;
     this.endTime = null;
     this.timelineWidth = 100; // percentage
-    this.dayStartTime = "07:40"; // Changed from 07:45 to 07:40
+    this.dayStartTime = "07:40"; // Keep the start time at 07:40
     this.dayEndTime = "16:05";
     this.onChange = null; // callback for changes
   }
@@ -79,19 +79,16 @@ class SchoolTimeline {
     const timeMarkers = document.createElement("div");
     timeMarkers.className = "time-markers";
     
-    // Add 7:40 marker
-    const earlyMarker = document.createElement("div");
-    earlyMarker.className = "time-marker";
-    earlyMarker.textContent = "7:40";
-    earlyMarker.style.left = `${this.getPositionPercentage("07:40")}%`;
-    timeMarkers.appendChild(earlyMarker);
-    
+    // Start with 8:00 marker (skip the 7:40 marker)
     for (let hour = 8; hour <= 16; hour++) {
-      const marker = document.createElement("div");
-      marker.className = "time-marker";
-      marker.textContent = `${hour}:00`;
-      marker.style.left = `${this.getPositionPercentage(hour + ":00")}%`;
-      timeMarkers.appendChild(marker);
+      // Only add hour markers up to and including 16:00, but not 16:05
+      if (hour <= 16) {
+        const marker = document.createElement("div");
+        marker.className = "time-marker";
+        marker.textContent = `${hour}:00`;
+        marker.style.left = `${this.getPositionPercentage(hour + ":00")}%`;
+        timeMarkers.appendChild(marker);
+      }
     }
 
     // Create school segments (instruction, recess, lunch)
