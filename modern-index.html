@@ -7,6 +7,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="modern-styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- Add jsPDF library for PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
   <!-- App Header -->
@@ -19,6 +22,7 @@
       <nav class="app-nav">
         <a id="calculator-tab" class="nav-tab active">Calculator</a>
         <a id="info-tab" class="nav-tab">School Information</a>
+        <a id="assignments-tab" class="nav-tab">Assignments</a>
         <label class="theme-switch">
           <input type="checkbox" id="theme-toggle">
           <span class="theme-slider"></span>
@@ -156,6 +160,20 @@
             </div>
           </div>
         </div>
+        
+        <!-- PDF Export Button -->
+        <div class="export-section">
+          <div class="assignment-date-picker">
+            <label for="assignmentDate" class="form-label">Assignment Date</label>
+            <input type="date" id="assignmentDate" class="form-control" value="">
+          </div>
+          <button id="addToAssignments" class="btn btn-secondary" disabled>
+            <i class="fas fa-plus-circle"></i> Add to Assignments
+          </button>
+          <button id="generatePDF" class="btn btn-primary" disabled>
+            <i class="fas fa-file-pdf"></i> Export as PDF
+          </button>
+        </div>
       </div>
     </div>
 
@@ -231,6 +249,42 @@
         
         <!-- Visual Timeline will be rendered here -->
         <div id="info-timeline-container"></div>
+      </div>
+    </div>
+
+    <!-- Assignments Page -->
+    <div id="assignments-page" style="display:none;">
+      <!-- Assignments Summary Card -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Your Assignments</h2>
+        </div>
+        <div id="no-assignments-message" class="text-center p-4">
+          <i class="fas fa-tasks fa-2x text-muted mb-3"></i>
+          <p>No assignments saved yet. Calculate a rate in the Calculator tab, then click "Add to Assignments".</p>
+        </div>
+        <div id="assignments-list">
+          <!-- Assignments will be dynamically added here -->
+        </div>
+        <div id="assignments-summary" class="mt-4" style="display:none;">
+          <div class="explanation-separator"></div>
+          <div class="result-item total-summary">
+            <span>Total Days:</span>
+            <strong id="total-days">0</strong>
+          </div>
+          <div class="result-item total-summary">
+            <span>Total Pay:</span>
+            <strong>$<span id="total-pay">0.00</span></strong>
+          </div>
+        </div>
+        <div class="export-section mt-3">
+          <button id="clearAllAssignments" class="btn btn-danger">
+            <i class="fas fa-trash"></i> Clear All
+          </button>
+          <button id="generateAssignmentsPDF" class="btn btn-primary">
+            <i class="fas fa-file-pdf"></i> Export All Assignments
+          </button>
+        </div>
       </div>
     </div>
   </div>

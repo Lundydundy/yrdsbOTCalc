@@ -48,6 +48,180 @@ document.addEventListener('DOMContentLoaded', async function() {
   let calcTimeline = null;
   let infoTimeline = null;
   
+  // Constants
+  const BASE_PAY_RATE = 286.38;
+  
+  // Utility Functions
+  function timeStringToDate(timeString) {
+    const [hours, minutes] = timeString.split(':').map(Number);
+    const date = new Date();
+    date.setHours(hours, minutes, 0, 0);
+    return date;
+  }
+  
+  function subtractTimesInMinutes(startTime, endTime) {
+    const startDate = timeStringToDate(startTime);
+    const endDate = timeStringToDate(endTime);
+    return Math.round((endDate - startDate) / 60000);
+  }
+  
+  // Load school data
+  async function loadSchools() {
+    try {
+      const response = await fetch('schoolTimes.json');
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      
+      const schools = await response.json();
+      delete schools['School Name']; // Remove header row
+      
+      // Extract school names
+      schoolNames = Object.keys(schools);
+      schoolDict = schools;
+      
+      console.log(`Loaded ${schoolNames.length} schools`);
+      return schools;
+    } catch (error) {
+      console.error("Error loading schools:", error);
+      showError(errorCalc, "Failed to load school data. Please refresh the page.");
+      return {};
+    }
+  }
+  
+  // Enhanced autocomplete function
+  function setupAutocomplete(searchBox, dropdown) {
+    if (!searchBox || !dropdown) return;
+    
+    let currentFocus = -1;
+    let filteredItems = [];
+    
+    // Input event for typing in search box
+    searchBox.addEventListener("input", debounce(function() {
+      const val = this.value.trim().toLowerCase();
+      
+      // Close any already open dropdown
+      closeAllLists();
+      if (!val) return false;
+      
+      filteredItems = [];
+      
+      // Filter school names based on input
+      schoolNames.forEach(schoolName => {
+        if (schoolName.toLowerCase().includes(val)) {
+          filteredItems.push(schoolName);
+        }
+      });
+      
+      // Sort filtered items by relevance
+      filteredItems.sort((a, b) => {
+        // Exact starts with match takes priority
+        const aStartsWith = a.toLowerCase().startsWith(val);
+        const bStartsWith = b.toLowerCase().startsWith(val);
+        
+        if (aStartsWith && !bStartsWith) return -1;
+        if (!aStartsWith && bStartsWith) return 1;
+        
+        // Then sort by string length for more precise matches
+        return a.length - b.length;
+      });
+      
+      // Limit to top 10 results
+      filteredItems = filteredItems.slice(0, 10);
+      
+      // Display the matches
+      dropdown.innerHTML = '';
+      dropdown.style.display = filteredItems.length > 0 ? "block" : "none";
+      
+      filteredItems.forEach((item, index) => {
+        const itemElement = document.createElement("div");
+        itemElement.className = "autocomplete-item";
+        
+        // Highlight the matching part
+        const matchIndex = item.toLowerCase().indexOf(val.toLowerCase());
+        const beforeMatch = item.substr(0, matchIndex);
+        const match = item.substr(matchIndex, val.length);
+        const afterMatch = item.substr(matchIndex + val.length);
+        
+        itemElement.innerHTML = beforeMatch + "<strong>" + match + "</strong>" + afterMatch;
+        
+        // Store the actual value
+        itemElement.dataset.value = item;
+        
+        // Click event
+        itemElement.addEventListener("click", function(e) {
+          searchBox.value = this.dataset.value;
+          closeAllLists();
+          
+          // If this is the calculator search box, update the school
+          if (searchBox === searchBoxCalc) {
+            updateSchool(this.dataset.value);
+          }
+        });
+        
+        dropdown.appendChild(itemElement);
+      });
+      
+      currentFocus = -1;
+    }, 200));
+    
+    // Key down event for keyboard navigation
+    searchBox.addEventListener("keydown", function(e) {
+      // Only process if dropdown is visible
+      if (dropdown.style.display !== "block") return;
+      
+      if (e.keyCode === 40) { // Down arrow
+        currentFocus++;
+        highlightOption(dropdown, currentFocus);
+        e.preventDefault();
+      } else if (e.keyCode === 38) { // Up arrow
+        currentFocus--;
+        highlightOption(dropdown, currentFocus);
+        e.preventDefault();
+      } else if (e.keyCode === 13 || e.keyCode === 9) { // Enter or Tab
+        e.preventDefault();
+        if (currentFocus > -1) {
+          const items = dropdown.querySelectorAll('.autocomplete-item');
+          if (items[currentFocus]) {
+            items[currentFocus].click();
+          }
+        } else if (filteredItems.length > 0) {
+          // Just select the first item if none highlighted
+          searchBox.value = filteredItems[0];
+          closeAllLists();
+          
+          // If this is the calculator search box, update the school
+          if (searchBox === searchBoxCalc) {
+            updateSchool(filteredItems[0]);
+          }
+        }
+      }
+    });
+    
+    // Close the list when clicking elsewhere
+    document.addEventListener("click", function(e) {
+      if (e.target !== searchBox) {
+        closeAllLists();
+      }
+    });
+    
+    // Helper function to close all autocomplete lists
+    function closeAllLists() {
+      dropdown.style.display = "none";
+      dropdown.innerHTML = '';
+      currentFocus = -1;
+    }
+  }
+  
+  function highlightOption(dropdown, index) {
+    const items = dropdown.querySelectorAll('.autocomplete-item');
+    items.forEach(item => item.classList.remove('active'));
+    
+    if (index >= 0 && index < items.length) {
+      items[index].classList.add('active');
+    }
+  }
+
   // DOM Elements - Calculator
   const searchBoxCalc = document.getElementById('searchBoxCalc');
   const dropdownCalc = document.getElementById('dropdownCalc');
@@ -91,191 +265,542 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Tab navigation elements
   const calculatorTab = document.getElementById('calculator-tab');
   const infoTab = document.getElementById('info-tab');
+  const assignmentsTab = document.getElementById('assignments-tab');
   const calculatorPage = document.getElementById('calculator-page');
   const schoolInfoPage = document.getElementById('school-info-page');
+  const assignmentsPage = document.getElementById('assignments-page');
   
   // Theme toggle
   const themeToggle = document.getElementById('theme-toggle');
   
-  // Handle mobile menu toggle
-  if (mobileMenuToggle) {
-    mobileMenuToggle.addEventListener('click', function() {
-      appNav.classList.toggle('active');
-    });
+  // DOM Elements - PDF Export
+  const generatePDFButton = document.getElementById('generatePDF');
+  
+  // DOM Elements - Assignments
+  const addToAssignmentsBtn = document.getElementById('addToAssignments');
+  const assignmentsList = document.getElementById('assignments-list');
+  const noAssignmentsMessage = document.getElementById('no-assignments-message');
+  const assignmentsSummary = document.getElementById('assignments-summary');
+  const totalDaysDisplay = document.getElementById('total-days');
+  const totalPayDisplay = document.getElementById('total-pay');
+  const clearAllAssignmentsBtn = document.getElementById('clearAllAssignments');
+  const generateAssignmentsPDFBtn = document.getElementById('generateAssignmentsPDF');
+  const assignmentDatePicker = document.getElementById('assignmentDate');
+
+  // Assignment management functions
+  let assignments = [];
+
+  function loadAssignments() {
+    const savedAssignments = localStorage.getItem('assignments');
+    if (savedAssignments) {
+      assignments = JSON.parse(savedAssignments);
+    }
+  }
+
+  function saveAssignments() {
+    localStorage.setItem('assignments', JSON.stringify(assignments));
+  }
+
+  function addAssignment(schoolName, startTime, endTime, payPoint, payRate, date = null) {
+    // Default to today if no date is provided
+    const assignmentDate = date || new Date().toISOString().split('T')[0];
     
-    // Close mobile menu when a navigation item is clicked
-    document.querySelectorAll('.nav-tab').forEach(tab => {
-      tab.addEventListener('click', function() {
-        if (window.innerWidth <= 768) {
-          appNav.classList.remove('active');
-        }
+    // Create assignment object
+    const newAssignment = {
+      id: Date.now().toString(),
+      schoolName,
+      startTime,
+      endTime,
+      payPoint: parseFloat(payPoint),
+      payRate: parseFloat(payRate),
+      date: assignmentDate
+    };
+    
+    // Add to assignments array
+    assignments.push(newAssignment);
+    
+    // Save to local storage
+    saveAssignments();
+    
+    // Re-render assignments list
+    displayAssignments();
+    
+    return newAssignment;
+  }
+
+  function removeAssignment(id) {
+    assignments = assignments.filter(assignment => assignment.id !== id);
+    saveAssignments();
+    displayAssignments();
+  }
+
+  function clearAllAssignments() {
+    assignments = [];
+    saveAssignments();
+    displayAssignments();
+  }
+
+  function calculateTotalPay() {
+    if (assignments.length === 0) {
+      totalDaysDisplay.textContent = '0';
+      totalPayDisplay.textContent = '0.00';
+      return { days: 0, pay: 0 };
+    }
+    
+    const totalDays = assignments.length;
+    const totalPay = assignments.reduce((sum, assignment) => sum + assignment.payRate, 0);
+    
+    totalDaysDisplay.textContent = totalDays;
+    totalPayDisplay.textContent = totalPay.toFixed(2);
+    
+    return { days: totalDays, pay: totalPay };
+  }
+
+  function displayAssignments() {
+    // Clear the list
+    assignmentsList.innerHTML = '';
+    
+    // Show/hide no assignments message
+    if (assignments.length === 0) {
+      noAssignmentsMessage.style.display = 'block';
+      assignmentsSummary.style.display = 'none';
+      return;
+    }
+    
+    // Hide no assignments message and show summary
+    noAssignmentsMessage.style.display = 'none';
+    assignmentsSummary.style.display = 'block';
+    
+    // Sort assignments by date (newest first)
+    const sortedAssignments = [...assignments].sort((a, b) => 
+      new Date(b.date) - new Date(a.date));
+    
+    // Create assignment items
+    sortedAssignments.forEach(assignment => {
+      const assignmentItem = document.createElement('div');
+      assignmentItem.className = 'assignment-item';
+      assignmentItem.innerHTML = `
+        <div class="assignment-header">
+          <div class="assignment-school">${assignment.schoolName}</div>
+          <div class="assignment-date">${formatDate(assignment.date)}</div>
+        </div>
+        <div class="assignment-content">
+          <div class="assignment-details">
+            <div class="assignment-detail">
+              <div class="detail-label">Time</div>
+              <div class="detail-value">${assignment.startTime} - ${assignment.endTime}</div>
+            </div>
+            <div class="assignment-detail">
+              <div class="detail-label">Pay Point</div>
+              <div class="detail-value">${assignment.payPoint}</div>
+            </div>
+            <div class="assignment-detail">
+              <div class="detail-label">Pay</div>
+              <div class="detail-value">$${assignment.payRate.toFixed(2)}</div>
+            </div>
+          </div>
+          <div class="assignment-actions">
+            <button class="btn btn-danger btn-icon remove-assignment" data-id="${assignment.id}">
+              <i class="fas fa-trash"></i> Remove
+            </button>
+          </div>
+        </div>
+      `;
+      
+      assignmentsList.appendChild(assignmentItem);
+      
+      // Add event listener to remove button
+      const removeBtn = assignmentItem.querySelector('.remove-assignment');
+      removeBtn.addEventListener('click', function() {
+        removeAssignment(this.getAttribute('data-id'));
       });
     });
     
-    // Close mobile menu when clicking outside
-    document.addEventListener('click', function(event) {
-      const isClickInsideNav = appNav.contains(event.target);
-      const isClickOnToggle = mobileMenuToggle.contains(event.target);
-      
-      if (!isClickInsideNav && !isClickOnToggle && appNav.classList.contains('active')) {
-        appNav.classList.remove('active');
-      }
+    // Update total pay calculation
+    calculateTotalPay();
+  }
+
+  function formatDate(dateStr) {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     });
   }
-  
-  // Constants
-  const BASE_PAY_RATE = 286.38;
-  
-  // Utility Functions
-  function timeStringToDate(timeString) {
-    const [hours, minutes] = timeString.split(":").map(Number);
-    const date = new Date();
-    date.setHours(hours, minutes, 0, 0);
-    return date;
-  }
-  
-  function subtractTimesInMinutes(startTime, endTime) {
-    const startDate = timeStringToDate(startTime);
-    const endDate = timeStringToDate(endTime);
-    
-    let diffMs = endDate - startDate;
-    if (diffMs < 0) {
-      diffMs += 24 * 60 * 60 * 1000; // Add 24 hours for next-day times
-    }
-    
-    return Math.floor(diffMs / (1000 * 60));
-  }
-  
-  // Load school data
-  async function loadSchools() {
-    try {
-      const response = await fetch('schoolTimes.json');
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
+
+  // Setup event listeners for assignments
+  function setupAssignmentsEvents() {
+    // Add to assignments button
+    addToAssignmentsBtn.addEventListener('click', function() {
+      const schoolName = searchBoxCalc.value;
+      const startTime = startTimeInput.value;
+      const endTime = endTimeInput.value;
+      const payPoint = pointDisplay.textContent;
+      const payRate = rateDisplay.textContent;
+      const assignmentDate = assignmentDatePicker.value;
       
-      const schools = await response.json();
-      delete schools['School Name']; // Remove header row
-      
-      // Extract school names
-      schoolNames = Object.keys(schools);
-      schoolDict = schools;
-      
-      console.log(`Loaded ${schoolNames.length} schools`);
-      return schools;
-    } catch (error) {
-      console.error("Error loading schools:", error);
-      showError(errorCalc, "Failed to load school data. Please refresh the page.");
-      return {};
-    }
-  }
-  
-  // Enhanced autocomplete function
-  function setupAutocomplete(searchBox, dropdown) {
-    let activeIndex = -1;
-    let filteredSchools = [];
-    
-    searchBox.addEventListener('input', debounce(function() {
-      const input = searchBox.value.toLowerCase();
-      dropdown.innerHTML = '';
-      filteredSchools = [];
-      activeIndex = -1;
-      
-      if (!input) {
-        dropdown.style.display = 'none';
+      // Validate that we have a calculation
+      if (!payPoint || payPoint === "0" || !payRate || payRate === "0.00") {
+        showError(errorCalc, "Please calculate a rate first");
         return;
       }
       
-      filteredSchools = schoolNames.filter(name => 
-        name.toLowerCase().includes(input)
-      );
+      // Add the assignment
+      addAssignment(schoolName, startTime, endTime, payPoint, payRate, assignmentDate);
       
-      if (filteredSchools.length > 0) {
-        dropdown.style.display = 'block';
-        
-        filteredSchools.forEach((name, index) => {
-          const option = document.createElement('div');
-          option.className = 'autocomplete-item';
-          
-          // Highlight matching text
-          const matchIndex = name.toLowerCase().indexOf(input.toLowerCase());
-          if (matchIndex !== -1) {
-            const before = name.substring(0, matchIndex);
-            const match = name.substring(matchIndex, matchIndex + input.length);
-            const after = name.substring(matchIndex + input.length);
-            option.innerHTML = before + '<strong>' + match + '</strong>' + after;
-          } else {
-            option.textContent = name;
-          }
-          
-          option.addEventListener('click', function() {
-            searchBox.value = name;
-            dropdown.style.display = 'none';
-            
-            if (searchBox === searchBoxCalc) {
-              updateSchool(name);
-            }
-          });
-          
-          option.addEventListener('mouseover', function() {
-            activeIndex = index;
-            highlightOption(dropdown, index);
-          });
-          
-          dropdown.appendChild(option);
-        });
-      } else {
-        dropdown.style.display = 'none';
-      }
-    }, 200));
+      // Show success message
+      const originalText = this.innerHTML;
+      this.innerHTML = '<i class="fas fa-check"></i> Added!';
+      this.classList.add('btn-success');
+      this.classList.remove('btn-secondary');
+      
+      // Reset button after 2 seconds
+      setTimeout(() => {
+        this.innerHTML = originalText;
+        this.classList.remove('btn-success');
+        this.classList.add('btn-secondary');
+      }, 2000);
+    });
     
-    // Keyboard navigation
-    searchBox.addEventListener('keydown', function(e) {
-      const items = dropdown.querySelectorAll('.autocomplete-item');
-      
-      if (!items.length) return;
-      
-      // Down arrow
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        activeIndex = (activeIndex < items.length - 1) ? activeIndex + 1 : 0;
-        highlightOption(dropdown, activeIndex);
-        items[activeIndex].scrollIntoView({ block: 'nearest' });
+    // Clear all assignments button
+    clearAllAssignmentsBtn.addEventListener('click', function() {
+      if (confirm('Are you sure you want to clear all assignments? This cannot be undone.')) {
+        clearAllAssignments();
       }
-      // Up arrow
-      else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        activeIndex = (activeIndex > 0) ? activeIndex - 1 : items.length - 1;
-        highlightOption(dropdown, activeIndex);
-        items[activeIndex].scrollIntoView({ block: 'nearest' });
-      }
-      // Enter key
-      else if (e.key === 'Enter' && activeIndex >= 0) {
-        e.preventDefault();
-        searchBox.value = filteredSchools[activeIndex];
-        dropdown.style.display = 'none';
+    });
+    
+    // Generate PDF of all assignments
+    generateAssignmentsPDFBtn.addEventListener('click', function() {
+      generateAssignmentsPDF();
+    });
+  }
+
+  // Setup event listeners for calculator tab
+  function setupCalculatorEvents() {
+    // Calculate button
+    calculateBtn.addEventListener('click', function() {
+      const schoolName = searchBoxCalc.value;
+      const startTime = startTimeInput.value;
+      const endTime = endTimeInput.value;
+      
+      if (validateCalculatorInputs(schoolName, startTime, endTime)) {
+        const result = calculateRate(schoolName, startTime, endTime);
         
-        if (searchBox === searchBoxCalc) {
-          updateSchool(filteredSchools[activeIndex]);
+        // Reset date picker to today when calculating
+        if (assignmentDatePicker) {
+          assignmentDatePicker.valueAsDate = new Date();
+        }
+        
+        // Enable the PDF and Add to Assignments buttons after successful calculation
+        if (generatePDFButton) {
+          generatePDFButton.removeAttribute('disabled');
+          generatePDFButton.classList.add('active');
+        }
+        
+        if (addToAssignmentsBtn) {
+          addToAssignmentsBtn.removeAttribute('disabled');
+          addToAssignmentsBtn.classList.add('active');
         }
       }
-      // Escape key
-      else if (e.key === 'Escape') {
-        dropdown.style.display = 'none';
-        activeIndex = -1;
+    });
+    
+    // Reset button
+    resetButtonCalc.addEventListener('click', function() {
+      searchBoxCalc.value = '';
+      startTimeInput.value = '';
+      endTimeInput.value = '';
+      pointDisplay.textContent = '0';
+      instructionalDisplay.textContent = '0';
+      rateDisplay.textContent = '0.00';
+      clearError(errorCalc);
+      
+      // Reset the explanation details
+      totalTimeDisplay.textContent = '0 mins';
+      recessTimeDisplay.textContent = '0 mins';
+      lunchTimeDisplay.textContent = '0 mins';
+      instrMinutesDisplay.textContent = '0 mins';
+      pointCalcDisplay.textContent = '0 mins ÷ 300 = 0';
+      minRuleDisplay.textContent = 'None';
+      finalCalcDisplay.textContent = `$${BASE_PAY_RATE.toFixed(2)} × 0 = $0.00`;
+      document.getElementById('min-pay-applied').style.display = 'none';
+      
+      // Reset the result circle
+      const resultCircle = document.querySelector('.result-circle');
+      if (resultCircle) {
+        resultCircle.style.background = `conic-gradient(var(--primary-color) 0% 0%, #f0f0f0 0% 100%)`;
       }
+      
+      // Reset timeline
+      if (calcTimeline) {
+        calcTimeline.setTimes(null, null);
+      }
+      
+      // Disable the PDF and Add to Assignments buttons
+      if (generatePDFButton) {
+        generatePDFButton.setAttribute('disabled', '');
+        generatePDFButton.classList.remove('active');
+      }
+      
+      if (addToAssignmentsBtn) {
+        addToAssignmentsBtn.setAttribute('disabled', '');
+        addToAssignmentsBtn.classList.remove('active');
+      }
+      
+      // Hide explanation details
+      explanationDetails.style.display = 'none';
+    });
+  }
+
+  // Generate PDF with all assignments
+  function generateAssignmentsPDF() {
+    // Check if there are assignments to export
+    if (assignments.length === 0) {
+      alert("No assignments to export. Please add assignments first.");
+      return;
+    }
+
+    const { days, pay } = calculateTotalPay();
+    const sortedAssignments = [...assignments].sort((a, b) => 
+      new Date(b.date) - new Date(a.date));
+    
+    // Create a new jsPDF instance
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // Add title and header
+    doc.setFontSize(20);
+    doc.setTextColor(41, 128, 185); // Primary color
+    doc.text('YRDSB OT Assignments Summary', 105, 20, { align: 'center' });
+    
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 30);
+    doc.text(`Total Days: ${days}`, 20, 40);
+    doc.text(`Total Pay: $${pay.toFixed(2)}`, 20, 50);
+    
+    // Create table for assignments
+    const tableColumn = ["Date", "School", "Time", "Pay Point", "Pay"];
+    const tableRows = [];
+    
+    // Add data to table rows
+    sortedAssignments.forEach(item => {
+      const formattedDate = new Date(item.date).toLocaleDateString();
+      const row = [
+        formattedDate,
+        item.schoolName,
+        `${item.startTime} - ${item.endTime}`,
+        item.payPoint.toString(),
+        `$${item.payRate.toFixed(2)}`
+      ];
+      tableRows.push(row);
+    });
+    
+    // Create the table
+    doc.autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      startY: 60,
+      theme: 'grid',
+      styles: {
+        fontSize: 10,
+        cellPadding: 3,
+        lineColor: [200, 200, 200]
+      },
+      headStyles: {
+        fillColor: [41, 128, 185],
+        textColor: 255,
+        fontStyle: 'bold'
+      },
+      alternateRowStyles: {
+        fillColor: [240, 240, 240]
+      },
+      columnStyles: {
+        0: { cellWidth: 30 },
+        1: { cellWidth: 60 },
+        2: { cellWidth: 35 },
+        3: { cellWidth: 25 },
+        4: { cellWidth: 30 }
+      }
+    });
+    
+    // Add monthly breakdown if there are more than 1 day
+    if (days > 1) {
+      // Calculate earnings by month
+      const monthlyBreakdown = sortedAssignments.reduce((acc, assignment) => {
+        const monthYear = new Date(assignment.date).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long' 
+        });
+        
+        if (!acc[monthYear]) {
+          acc[monthYear] = {
+            days: 0,
+            pay: 0
+          };
+        }
+        
+        acc[monthYear].days += 1;
+        acc[monthYear].pay += assignment.payRate;
+        
+        return acc;
+      }, {});
+      
+      // Get monthly data for table
+      const monthlyHeaders = ["Month", "Days", "Pay"];
+      const monthlyRows = Object.entries(monthlyBreakdown).map(([month, data]) => [
+        month,
+        data.days,
+        `$${data.pay.toFixed(2)}`
+      ]);
+      
+      // Add monthly breakdown table
+      const finalY = doc.lastAutoTable.finalY + 20;
+      doc.setFontSize(14);
+      doc.setTextColor(41, 128, 185);
+      doc.text('Monthly Breakdown', 105, finalY, { align: 'center' });
+      
+      doc.autoTable({
+        head: [monthlyHeaders],
+        body: monthlyRows,
+        startY: finalY + 10,
+        theme: 'grid',
+        styles: {
+          fontSize: 10,
+          cellPadding: 3,
+          lineColor: [200, 200, 200]
+        },
+        headStyles: {
+          fillColor: [41, 128, 185],
+          textColor: 255,
+          fontStyle: 'bold'
+        },
+        alternateRowStyles: {
+          fillColor: [240, 240, 240]
+        }
+      });
+    }
+    
+    // Add footer with app information
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text('Generated by YRDSB OT Daily Rate Calculator', 105, 280, { align: 'center' });
+    
+    // Save the PDF
+    doc.save(`YRDSB_OT_Assignments_Summary.pdf`);
+  }
+
+  // PDF Export functionality
+  const pdfExportBtn = document.getElementById('generatePDF');
+  if (pdfExportBtn) {
+    pdfExportBtn.addEventListener('click', function() {
+      generatePDF();
     });
   }
   
-  function highlightOption(dropdown, index) {
-    const items = dropdown.querySelectorAll('.autocomplete-item');
-    items.forEach(item => item.classList.remove('active'));
-    
-    if (index >= 0 && index < items.length) {
-      items[index].classList.add('active');
+  // Generate PDF report of the calculation
+  function generatePDF() {
+    // Check if there's a calculation to export
+    if (!pointDisplay.textContent || pointDisplay.textContent === "0") {
+      showError(errorCalc, "Please calculate a rate before generating a PDF");
+      return;
     }
+
+    const schoolName = searchBoxCalc.value;
+    const startTime = startTimeInput.value;
+    const endTime = endTimeInput.value;
+    
+    // Create a new jsPDF instance
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // Add title and header
+    doc.setFontSize(20);
+    doc.setTextColor(41, 128, 185); // Primary color
+    doc.text('YRDSB OT Daily Rate Calculation', 105, 20, { align: 'center' });
+    
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 35);
+    
+    // School and time information
+    doc.setFontSize(14);
+    doc.text('Assignment Details', 20, 45);
+    doc.setFontSize(12);
+    doc.text(`School: ${schoolName}`, 20, 55);
+    doc.text(`Assignment Time: ${startTime} - ${endTime}`, 20, 65);
+    
+    // Calculation breakdown
+    doc.setFontSize(14);
+    doc.text('Calculation Breakdown', 20, 80);
+    doc.setFontSize(12);
+    doc.text(`Total Time: ${totalTimeDisplay.textContent}`, 20, 90);
+    doc.text(`Recess Time: ${recessTimeDisplay.textContent}`, 20, 100);
+    doc.text(`Lunch Time: ${lunchTimeDisplay.textContent}`, 20, 110);
+    doc.text(`Instructional Time: ${instrMinutesDisplay.textContent}`, 20, 120);
+    doc.text(`Pay Point Calculation: ${pointCalcDisplay.textContent}`, 20, 130);
+    
+    // Minimum rule applied (if any)
+    if (minRuleDisplay.textContent !== "None") {
+      doc.text(`Minimum Rule Applied: ${minRuleDisplay.textContent}`, 20, 140);
+    }
+    
+    // Final calculation
+    doc.text(`Final Calculation: ${finalCalcDisplay.textContent}`, 20, minRuleDisplay.textContent !== "None" ? 150 : 140);
+    
+    // Results section
+    doc.setFontSize(16);
+    doc.setTextColor(41, 128, 185); // Primary color
+    doc.text('Final Results', 105, minRuleDisplay.textContent !== "None" ? 165 : 155, { align: 'center' });
+    
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Pay Point: ${pointDisplay.textContent}`, 105, minRuleDisplay.textContent !== "None" ? 175 : 165, { align: 'center' });
+    doc.text(`Pay Rate: $${rateDisplay.textContent}`, 105, minRuleDisplay.textContent !== "None" ? 185 : 175, { align: 'center' });
+    
+    // Add footer with app information
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text('Generated by YRDSB OT Daily Rate Calculator', 105, 280, { align: 'center' });
+    
+    // Save the PDF
+    doc.save(`YRDSB_OT_Rate_${schoolName.replace(/\s+/g, '_')}.pdf`);
   }
-  
+
+  // Setup tab navigation
+  function setupTabs() {
+    calculatorTab.addEventListener('click', function() {
+      calculatorPage.style.display = 'block';
+      schoolInfoPage.style.display = 'none';
+      assignmentsPage.style.display = 'none';
+      calculatorTab.classList.add('active');
+      infoTab.classList.remove('active');
+      assignmentsTab.classList.remove('active');
+    });
+    
+    infoTab.addEventListener('click', function() {
+      calculatorPage.style.display = 'none';
+      schoolInfoPage.style.display = 'block';
+      assignmentsPage.style.display = 'none';
+      infoTab.classList.add('active');
+      calculatorTab.classList.remove('active');
+      assignmentsTab.classList.remove('active');
+    });
+    
+    assignmentsTab.addEventListener('click', function() {
+      calculatorPage.style.display = 'none';
+      schoolInfoPage.style.display = 'none';
+      assignmentsPage.style.display = 'block';
+      assignmentsTab.classList.add('active');
+      calculatorTab.classList.remove('active');
+      infoTab.classList.remove('active');
+      
+      // Refresh assignments display when switching to the tab
+      displayAssignments();
+    });
+  }
+
   // Handle school selection update
   function updateSchool(schoolName) {
     if (schoolDict[schoolName]) {
@@ -431,36 +956,10 @@ document.addEventListener('DOMContentLoaded', async function() {
   function setPresetTimes(presetType) {
     if (!currentSchool) return;
     
-    switch(presetType) {
+    switch (presetType) {
       case 'full-day':
-        // Add 15 mins before and after instructional time for full day
-        const startHour = parseInt(currentSchool.begin.split(':')[0]);
-        const startMin = parseInt(currentSchool.begin.split(':')[1]);
-        const endHour = parseInt(currentSchool.dismiss.split(':')[0]);
-        const endMin = parseInt(currentSchool.dismiss.split(':')[1]);
-        
-        // Calculate 15 minutes before start time
-        let beforeStartMin = startMin - 15;
-        let beforeStartHour = startHour;
-        if (beforeStartMin < 0) {
-          beforeStartMin += 60;
-          beforeStartHour -= 1;
-        }
-        
-        // Calculate 15 minutes after end time
-        let afterEndMin = endMin + 15;
-        let afterEndHour = endHour;
-        if (afterEndMin >= 60) {
-          afterEndMin -= 60;
-          afterEndHour += 1;
-        }
-        
-        // Format the times as HH:MM
-        const fullStartTime = `${beforeStartHour.toString().padStart(2, '0')}:${beforeStartMin.toString().padStart(2, '0')}`;
-        const fullEndTime = `${afterEndHour.toString().padStart(2, '0')}:${afterEndMin.toString().padStart(2, '0')}`;
-        
-        startTimeInput.value = fullStartTime;
-        endTimeInput.value = fullEndTime;
+        startTimeInput.value = currentSchool.begin;
+        endTimeInput.value = currentSchool.dismiss;
         break;
       case 'am-only':
         startTimeInput.value = currentSchool.begin;
@@ -470,11 +969,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         startTimeInput.value = currentSchool.lunchEnd;
         endTimeInput.value = currentSchool.dismiss;
         break;
-      default:
-        return;
     }
     
-    // Update timeline if available
+    // Update timeline if it exists
     if (calcTimeline) {
       calcTimeline.setTimes(startTimeInput.value, endTimeInput.value);
     }
@@ -489,14 +986,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     const school = schoolDict[schoolName];
     
-    // Update the school info displays
+    // Update the display
     schoolNameDisplay.textContent = schoolName;
     instStartDisplay.textContent = school.begin;
     instEndDisplay.textContent = school.dismiss;
     recessDisplay.textContent = `${school.recStart} - ${school.recEnd}`;
     lunchDisplay.textContent = `${school.lunchStart} - ${school.lunchEnd}`;
     
-    // Update the timeline for school info
+    // Update info timeline if it exists
     if (infoTimelineContainer) {
       if (!infoTimeline) {
         infoTimeline = new SchoolTimeline(infoTimelineContainer, school);
@@ -506,60 +1003,72 @@ document.addEventListener('DOMContentLoaded', async function() {
         infoTimeline.render();
       }
     }
-    
-    clearError(errorInfo);
   }
   
   // Error handling functions
   function showError(element, message) {
-    element.textContent = message;
-    element.style.display = 'block';
+    if (element) {
+      element.textContent = message;
+      element.style.display = "block";
+    }
   }
   
   function clearError(element) {
-    element.textContent = '';
-    element.style.display = 'none';
+    if (element) {
+      element.textContent = "";
+      element.style.display = "none";
+    }
   }
   
   // Validation functions
   function validateCalculatorInputs(schoolName, startTime, endTime) {
-    if (!schoolName || !startTime || !endTime) {
-      showError(errorCalc, "Please fill out all fields");
-      return false;
-    }
-    
-    if (!schoolNames.includes(schoolName)) {
-      showError(errorCalc, "Please enter a valid school name");
-      return false;
-    }
-    
-    if (timeStringToDate(startTime) > timeStringToDate(endTime)) {
-      showError(errorCalc, "Start time cannot be later than end time");
-      return false;
-    }
-    
-    if (timeStringToDate(startTime) < timeStringToDate("07:45") || 
-        timeStringToDate(endTime) > timeStringToDate("16:05")) {
-      showError(errorCalc, "Please enter a time between 7:45 and 16:05");
-      return false;
-    }
-    
     clearError(errorCalc);
+    
+    if (!schoolName) {
+      showError(errorCalc, "Please select a school");
+      return false;
+    }
+    
+    if (!schoolDict[schoolName]) {
+      showError(errorCalc, "Please select a valid school from the dropdown");
+      return false;
+    }
+    
+    if (!startTime) {
+      showError(errorCalc, "Please enter a start time");
+      return false;
+    }
+    
+    if (!endTime) {
+      showError(errorCalc, "Please enter an end time");
+      return false;
+    }
+    
+    // Validate time sequence
+    const startDate = timeStringToDate(startTime);
+    const endDate = timeStringToDate(endTime);
+    
+    if (startDate >= endDate) {
+      showError(errorCalc, "End time must be after start time");
+      return false;
+    }
+    
     return true;
   }
   
   function validateInfoInput(schoolName) {
+    clearError(errorInfo);
+    
     if (!schoolName) {
       showError(errorInfo, "Please enter a school name");
       return false;
     }
     
-    if (!schoolNames.includes(schoolName)) {
-      showError(errorInfo, "Please enter a valid school name");
+    if (!schoolDict[schoolName]) {
+      showError(errorInfo, "Please select a valid school from the dropdown");
       return false;
     }
     
-    clearError(errorInfo);
     return true;
   }
   
@@ -567,99 +1076,58 @@ document.addEventListener('DOMContentLoaded', async function() {
   function debounce(func, wait) {
     let timeout;
     return function(...args) {
+      const context = this;
       clearTimeout(timeout);
-      timeout = setTimeout(() => func.apply(this, args), wait);
+      timeout = setTimeout(() => {
+        func.apply(context, args);
+      }, wait);
     };
   }
-  
-  // Setup event listeners for calculator tab
-  function setupCalculatorEvents() {
-    // Calculate button
-    calculateBtn.addEventListener('click', function() {
-      const schoolName = searchBoxCalc.value;
-      const startTime = startTimeInput.value;
-      const endTime = endTimeInput.value;
-      
-      if (validateCalculatorInputs(schoolName, startTime, endTime)) {
-        calculateRate(schoolName, startTime, endTime);
-      }
-    });
+
+  // Setup theme toggle
+  function setupThemeToggle() {
+    if (!themeToggle) return;
     
-    // Reset button
-    resetButtonCalc.addEventListener('click', function() {
-      searchBoxCalc.value = '';
-      startTimeInput.value = '';
-      endTimeInput.value = '';
-      pointDisplay.textContent = '0';
-      instructionalDisplay.textContent = '0';
-      rateDisplay.textContent = '0.00';
-      clearError(errorCalc);
-      
-      // Reset the explanation details
-      totalTimeDisplay.textContent = '0 mins';
-      recessTimeDisplay.textContent = '0 mins';
-      lunchTimeDisplay.textContent = '0 mins';
-      instrMinutesDisplay.textContent = '0 mins';
-      pointCalcDisplay.textContent = '0 mins ÷ 300 = 0';
-      minRuleDisplay.textContent = 'None';
-      finalCalcDisplay.textContent = `$${BASE_PAY_RATE.toFixed(2)} × 0 = $0.00`;
-      document.getElementById('min-pay-applied').style.display = 'none';
-      
-      // Reset the result circle
-      const resultCircle = document.querySelector('.result-circle');
-      if (resultCircle) {
-        resultCircle.style.background = `conic-gradient(var(--primary-color) 0% 0%, #f0f0f0 0% 100%)`;
-      }
-      
-      // Reset timeline
-      if (calcTimeline) {
-        calcTimeline.setTimes(null, null);
-      }
-      
-      // Hide explanation details
-      explanationDetails.style.display = 'none';
-    });
+    // Check for saved theme preference or use preferred color scheme
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      document.body.classList.add('dark-mode');
+      themeToggle.checked = true;
+    } else if (savedTheme === 'light') {
+      document.body.classList.remove('dark-mode');
+      themeToggle.checked = false;
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.body.classList.add('dark-mode');
+      themeToggle.checked = true;
+    }
     
-    // Connect input time fields to timeline
-    startTimeInput.addEventListener('change', function() {
-      if (calcTimeline && this.value) {
-        if (!endTimeInput.value) {
-          calcTimeline.setTimes(this.value, null);
-        } else {
-          calcTimeline.setTimes(this.value, endTimeInput.value);
-        }
-      }
-    });
-    
-    endTimeInput.addEventListener('change', function() {
-      if (calcTimeline && startTimeInput.value && this.value) {
-        calcTimeline.setTimes(startTimeInput.value, this.value);
-      }
-    });
-    
-    // Toggle explanation visibility
-    toggleExplanation.addEventListener('click', function() {
-      if (explanationDetails.style.display === 'none') {
-        explanationDetails.style.display = 'block';
+    // Toggle theme on change
+    themeToggle.addEventListener('change', function() {
+      if (this.checked) {
+        document.body.classList.add('dark-mode');
+        localStorage.setItem('theme', 'dark');
       } else {
-        explanationDetails.style.display = 'none';
+        document.body.classList.remove('dark-mode');
+        localStorage.setItem('theme', 'light');
       }
-    });
-    
-    // Setup preset buttons
-    presetButtons.forEach(button => {
-      button.addEventListener('click', function() {
-        const presetType = this.getAttribute('data-preset');
-        if (currentSchool) {
-          setPresetTimes(presetType);
-        } else {
-          showError(errorCalc, "Please select a school first");
-        }
-      });
     });
   }
   
-  // Setup event listeners for info tab
+  // Setup outside clicks for dropdowns
+  function setupOutsideClicks() {
+    document.addEventListener('click', function(event) {
+      // Close dropdowns when clicking outside
+      if (!dropdownCalc.contains(event.target) && event.target !== searchBoxCalc) {
+        dropdownCalc.style.display = 'none';
+      }
+      
+      if (!dropdownInfo.contains(event.target) && event.target !== searchBoxInfo) {
+        dropdownInfo.style.display = 'none';
+      }
+    });
+  }
+  
+  // Setup event listeners for school info page
   function setupInfoEvents() {
     // Search button
     searchButtonInfo.addEventListener('click', function() {
@@ -679,96 +1147,8 @@ document.addEventListener('DOMContentLoaded', async function() {
       recessDisplay.textContent = '-';
       lunchDisplay.textContent = '-';
       clearError(errorInfo);
-      
-      // Reset timeline
-      if (infoTimeline) {
-        infoTimeline.school = null;
-        infoTimeline.render();
-      }
-    });
-    
-    // Handle search box focus
-    searchBoxInfo.addEventListener('focus', function() {
-      if (this.value) {
-        const event = new Event('input');
-        this.dispatchEvent(event);
-      }
     });
   }
-  
-  // Setup tab navigation
-  function setupTabs() {
-    calculatorTab.addEventListener('click', function() {
-      calculatorPage.style.display = 'block';
-      schoolInfoPage.style.display = 'none';
-      calculatorTab.classList.add('active');
-      infoTab.classList.remove('active');
-    });
-    
-    infoTab.addEventListener('click', function() {
-      calculatorPage.style.display = 'none';
-      schoolInfoPage.style.display = 'block';
-      infoTab.classList.add('active');
-      calculatorTab.classList.remove('active');
-    });
-  }
-  
-  // Setup theme toggling
-  function setupThemeToggle() {
-    // Check for saved theme preference
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') {
-      document.body.classList.add('dark-mode');
-      themeToggle.checked = true;
-    }
-    
-    themeToggle.addEventListener('change', function() {
-      if (this.checked) {
-        document.body.classList.add('dark-mode');
-        localStorage.setItem('theme', 'dark');
-      } else {
-        document.body.classList.remove('dark-mode');
-        localStorage.setItem('theme', 'light');
-      }
-    });
-  }
-  
-  // Setup click-outside functionality for dropdowns
-  function setupOutsideClicks() {
-    document.addEventListener('click', function(e) {
-      if (!e.target.closest('.search-container')) {
-        dropdownCalc.style.display = 'none';
-        dropdownInfo.style.display = 'none';
-      }
-    });
-  }
-  
-  // Add mobile menu toggle functionality
-  const menuToggle = document.querySelector('.mobile-menu-toggle');
-  const nav = document.querySelector('.app-nav');
-  
-  if (menuToggle) {
-    menuToggle.addEventListener('click', function() {
-      nav.classList.toggle('active');
-    });
-  }
-  
-  // Close menu when a nav item is clicked
-  const navTabs = document.querySelectorAll('.nav-tab');
-  navTabs.forEach(tab => {
-    tab.addEventListener('click', function() {
-      if (window.innerWidth <= 768) {
-        nav.classList.remove('active');
-      }
-    });
-  });
-
-  // Close menu when clicking outside
-  document.addEventListener('click', function(e) {
-    if (!nav.contains(e.target) && !menuToggle.contains(e.target) && nav.classList.contains('active')) {
-      nav.classList.remove('active');
-    }
-  });
 
   // Initialize the application
   async function init() {
@@ -779,12 +1159,22 @@ document.addEventListener('DOMContentLoaded', async function() {
     setupAutocomplete(searchBoxCalc, dropdownCalc);
     setupAutocomplete(searchBoxInfo, dropdownInfo);
     
+    // Set default date to today
+    if (assignmentDatePicker) {
+      assignmentDatePicker.valueAsDate = new Date();
+    }
+    
     // Setup event handlers
     setupCalculatorEvents();
     setupInfoEvents();
     setupTabs();
     setupThemeToggle();
     setupOutsideClicks();
+    setupAssignmentsEvents();
+    
+    // Load saved assignments from local storage
+    loadAssignments();
+    displayAssignments();
     
     console.log('Application initialized');
   }
