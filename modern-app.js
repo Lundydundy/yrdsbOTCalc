@@ -303,7 +303,17 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   function addAssignment(schoolName, startTime, endTime, payPoint, payRate, date = null) {
     // Default to today if no date is provided
-    const assignmentDate = date || new Date().toISOString().split('T')[0];
+    let assignmentDate;
+    
+    if (date) {
+      // Fix timezone issue by parsing the date and keeping the local date
+      const selectedDate = new Date(date);
+      // Add timezone offset to ensure the date doesn't shift
+      selectedDate.setMinutes(selectedDate.getMinutes() + selectedDate.getTimezoneOffset());
+      assignmentDate = selectedDate.toISOString().split('T')[0];
+    } else {
+      assignmentDate = new Date().toISOString().split('T')[0];
+    }
     
     // Create assignment object
     const newAssignment = {
@@ -421,8 +431,13 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 
   function formatDate(dateStr) {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
+    // Parse the YYYY-MM-DD format and create a date in local time
+    const [year, month, day] = dateStr.split('-').map(Number);
+    // Create a date using local timezone (months are 0-indexed in JS Date)
+    const date = new Date(year, month - 1, day);
+    
+    // Format with Canadian locale
+    return date.toLocaleDateString('en-CA', {
       weekday: 'short',
       year: 'numeric',
       month: 'short',
@@ -506,19 +521,6 @@ document.addEventListener('DOMContentLoaded', async function() {
       }
     });
     
-    // Toggle explanation details
-    if (toggleExplanation && explanationDetails) {
-      toggleExplanation.addEventListener('click', function() {
-        if (explanationDetails.style.display === 'none' || !explanationDetails.style.display) {
-          explanationDetails.style.display = 'block';
-          this.innerHTML = '<i class="fas fa-times-circle"></i> Hide details';
-        } else {
-          explanationDetails.style.display = 'none';
-          this.innerHTML = '<i class="fas fa-info-circle"></i> How was this calculated?';
-        }
-      });
-    }
-    
     // Preset buttons (Full Day, AM Only, PM Only)
     presetButtons.forEach(button => {
       button.addEventListener('click', function() {
@@ -535,6 +537,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         setPresetTimes(presetType);
       });
     });
+    
+    // Toggle explanation details
+    if (toggleExplanation && explanationDetails) {
+      toggleExplanation.addEventListener('click', function() {
+        if (explanationDetails.style.display === 'none' || !explanationDetails.style.display) {
+          explanationDetails.style.display = 'block';
+          this.innerHTML = '<i class="fas fa-times-circle"></i> Hide details';
+        } else {
+          explanationDetails.style.display = 'none';
+          this.innerHTML = '<i class="fas fa-info-circle"></i> How was this calculated?';
+        }
+      });
+    }
     
     // Reset button
     resetButtonCalc.addEventListener('click', function() {
