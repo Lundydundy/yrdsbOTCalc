@@ -506,6 +506,19 @@ document.addEventListener('DOMContentLoaded', async function() {
       }
     });
     
+    // Toggle explanation details
+    if (toggleExplanation && explanationDetails) {
+      toggleExplanation.addEventListener('click', function() {
+        if (explanationDetails.style.display === 'none' || !explanationDetails.style.display) {
+          explanationDetails.style.display = 'block';
+          this.innerHTML = '<i class="fas fa-times-circle"></i> Hide details';
+        } else {
+          explanationDetails.style.display = 'none';
+          this.innerHTML = '<i class="fas fa-info-circle"></i> How was this calculated?';
+        }
+      });
+    }
+    
     // Reset button
     resetButtonCalc.addEventListener('click', function() {
       searchBoxCalc.value = '';
