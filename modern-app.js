@@ -519,6 +519,23 @@ document.addEventListener('DOMContentLoaded', async function() {
       });
     }
     
+    // Preset buttons (Full Day, AM Only, PM Only)
+    presetButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        // Get the preset type from data attribute
+        const presetType = this.getAttribute('data-preset');
+        
+        // Make sure we have a school selected
+        if (!searchBoxCalc.value || !schoolDict[searchBoxCalc.value]) {
+          showError(errorCalc, "Please select a school first");
+          return;
+        }
+        
+        // Apply the preset times
+        setPresetTimes(presetType);
+      });
+    });
+    
     // Reset button
     resetButtonCalc.addEventListener('click', function() {
       searchBoxCalc.value = '';
